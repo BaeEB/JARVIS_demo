@@ -1,0 +1,14 @@
+name: jarvis runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  auto-repair:
+    runs-on: self-hosted
+    steps:
+      - name: run jarvis action
+        uses: BaeEB/jarvis-action@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: jarvis_target
