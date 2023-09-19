@@ -10,6 +10,7 @@ jobs:
       - name: checkout source code
         uses: actions/checkout@v2
   auto-repair:
+    needs: checkout
     runs-on: self-hosted
     steps:
       - name: run jarvis action
