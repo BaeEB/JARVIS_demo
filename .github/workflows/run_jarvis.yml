@@ -8,7 +8,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: run jarvis action
-        uses: BaeEB/jarvis-action@main
+        uses: BaeEB/jarvis-action@forDebug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           path: jarvis_target
