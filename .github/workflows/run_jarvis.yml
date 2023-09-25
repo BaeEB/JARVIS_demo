@@ -1,0 +1,20 @@
+name: jarvis runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  checkout:
+    runs-on: self-hosted
+    steps:
+      - name: checkout source code
+        uses: actions/checkout@v2
+  auto-repair:
+    needs: checkout
+    runs-on: self-hosted
+    steps:
+      - name: run jarvis action
+        uses: BaeEB/jarvis-action@forDebug
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: jarvis_target
