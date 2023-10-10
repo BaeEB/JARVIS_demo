@@ -10,7 +10,9 @@ extra-build-env-setting-commands:
 
 test-candidates: |
 
-  bad_case.c
+  bad_case.1c
+  bad_case.2c
+  bad_case.3c
 
 time-out: 3600
 test-build-command: | # 테스트 빌드 커맨드 / defect4cpp 기준 meta.json의 내용이 필요
