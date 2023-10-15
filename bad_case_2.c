@@ -6,13 +6,16 @@ int test1603(int x)
 	{
 	case 1:
 	case 2:
-		x++;
+	    x++;
 		break;
 	case 3:	
 		x--;
+		/* break statement added here to prevent fall through */
+        break;
 	default:
-	    ;
-	}
+        /* break statement added here for compliance */
+        break;
+    }
 
-	return x;
+    return x;
 }
