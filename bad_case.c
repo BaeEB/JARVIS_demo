@@ -5,9 +5,8 @@ int test0301(int ap, int bp, int cp){
 	int bi = bp;
 	int ci = cp;
 	int sum = ai
-            + bi // /*    MISRA_C_2012_03_01
-            + ci
-               // */
-            ;
+            + bi    /* this was previously a non-compliant code in regard to rule MISRA_C_2012_03_01 */
+            + ci;
+
     return sum;
 }
