@@ -5,9 +5,10 @@ int test0301(int ap, int bp, int cp){
 	int bi = bp;
 	int ci = cp;
 	int sum = ai
-            + bi // /*    MISRA_C_2012_03_01
+            /* + bi MISRA_C_2012_03_01 */
+            + bi
+            /* + ci */
             + ci
-               // */
             ;
     return sum;
 }
