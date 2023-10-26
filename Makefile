@@ -4,21 +4,17 @@ LDFLAGS:=
 
 all: test
 
-test: test.o bad_case_1.o bad_case_2.o bad_case_3.o
-	$(CC) $(CFLAGS) test.o bad_case_1.o bad_case_2.o bad_case_3.o -o test $(LDFLAGS)
+test: test.o BranchChecker_avl.o
+	$(CC) $(CFLAGS) test.o BranchChecker_avl.o -o test $(LDFLAGS)
 
-bad_case_1.o: bad_case_1.c 
-	$(CC) $(CFLAGS) -o bad_case_1.o -c bad_case_1.c
-
-bad_case_2.o: bad_case_2.c 
-	$(CC) $(CFLAGS) -o bad_case_2.o -c bad_case_2.c
-
-bad_case_3.o: bad_case_3.c 
-	$(CC) $(CFLAGS) -o bad_case_3.o -c bad_case_3.c
+BranchChecker_avl.o: src/BranchChecker_avl.c
+	$(CC) $(CFLAGS) -o BranchChecker_avl.o -c src/BranchChecker_avl.c
 
 test.o: test.c
 	$(CC) $(CFLAGS) -o test.o -c test.c
 
 clean:
+	rm -f *.gcov
+	rm -f *.gcda *.gcno
 	rm -f *.o
 	rm -f test
