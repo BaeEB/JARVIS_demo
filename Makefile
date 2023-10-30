@@ -4,11 +4,11 @@ LDFLAGS:=
 
 all: test
 
-test: test.o BranchChecker_avl.o
-	$(CC) $(CFLAGS) test.o BranchChecker_avl.o -o test $(LDFLAGS)
+test: test.o Calculator.o
+	$(CC) $(CFLAGS) test.o Calculator.o -o test $(LDFLAGS)
 
-BranchChecker_avl.o: src/BranchChecker_avl.c
-	$(CC) $(CFLAGS) -o BranchChecker_avl.o -c src/BranchChecker_avl.c
+Calculator.o: src/Calculator.c
+	$(CC) $(CFLAGS) -o Calculator.o -c src/Calculator.c
 
 test.o: test.c
 	$(CC) $(CFLAGS) -o test.o -c test.c
