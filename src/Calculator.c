@@ -1,6 +1,7 @@
-#include <stdio.h>  
+#include <stdio.h>
+#include "Calculator.h"
 
-int main()  
+int Calculator()  
 {  
     // declare local variables  
     char opt;  
