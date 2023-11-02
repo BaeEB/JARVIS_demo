@@ -2,6 +2,7 @@
 #include <stdlib.h>
 //#include "src/ProductionCode.h"
 // #include "src/BranchChecker_avl.h"
+#include "src/Calculator.h"
 #include <stdbool.h>
 
 #define TEST_SIZE
@@ -72,59 +73,34 @@ int expected_output7[TEST_SIZE][11] = {
     {1, 6, 12, 20, 38, 45, 50, 54, 90}
 };
 
-
-int main(int argc, char *argv[]) {
-#ifdef GCOV
-	  {
-		  dpp_gcov_sigaction.sa_handler = dpp_sighandler;
-		  sigemptyset(&dpp_gcov_sigaction.sa_mask);
-		  dpp_gcov_sigaction.sa_flags = 0;
-		  sigaction(SIGSEGV, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-		  sigaction(SIGFPE, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-		  sigaction(SIGABRT, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-	  }
-#endif
-    int test_case = atoi(argv[1]);
-    int test_index = atoi(argv[2]); //e.q. ./test 2 3
+// int main(int argc, char *argv[])
+int main() {
+// #ifdef GCOV
+// 	  {
+// 		  dpp_gcov_sigaction.sa_handler = dpp_sighandler;
+// 		  sigemptyset(&dpp_gcov_sigaction.sa_mask);
+// 		  dpp_gcov_sigaction.sa_flags = 0;
+// 		  sigaction(SIGSEGV, &dpp_gcov_sigaction, &dpp_orig_sigaction);
+// 		  sigaction(SIGFPE, &dpp_gcov_sigaction, &dpp_orig_sigaction);
+// 		  sigaction(SIGABRT, &dpp_gcov_sigaction, &dpp_orig_sigaction);
+// 	  }
+// #endif
+//     int test_case = atoi(argv[1]);
+//     int test_index = atoi(argv[2]); //e.q. ./test 2 3
     bool compare = true;
 
-    switch(test_case) {
-        case 6: ;
-            struct Node* root = NULL;
+    int result = Calculator(1, '+', 2);
+    compare = (result==3);
+    result = Calculator(1, '-', 2);
+    compare = (result==-1);
 
-            for (int i = 0; i < 11; i++) {
-                // root = Insert(root, input6_1[test_index][i]);
-            }
-
-            for (int i = 0; i < 3; i++) {
-                // root = Delete(root, input6_2[test_index][i]);
-            }
-
-            // int* actual_output6 = getInorder(root);
-
-            for (int i = 0; i < 11; i++) {
-                // printf("%d, ", actual_output6[i]);
-            }
-            int i = 0;
-            bool compare = true;
-            for (int i = 0; i < 11; i++) {
-                // printf("Actual: %d  Expected: %d\n", actual_output6[i], expected_output6[test_index][i]);
-                // if (actual_output6[i] != expected_output6[test_index][i]) {
-
-                //     compare = false;
-                //     break;
-                // }
-            }
-            if (compare) {
-                printf("PASSED\n");
-            }
-            else {
-                printf("FAILED\n");
-            }
-            return compare == true ? 0 : 1;
-
+    if (compare) {
+        printf("PASS!\n");
+        return 0;
+    }         
+    else {
+        printf("FAIL!\n");
+        return -1;
     }
-    return 0;
-
 
 }

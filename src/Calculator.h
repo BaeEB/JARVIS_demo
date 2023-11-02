@@ -1,1 +1,1 @@
-int Calculator();
+int Calculator(int a, char c, int b);
