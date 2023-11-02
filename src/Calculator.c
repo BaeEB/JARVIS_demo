@@ -5,24 +5,6 @@ int Calculator(int a, char c, int b)
 {  
     float res;  
     // printf (" Choose an operator(+, -, *, /) to perform the operation in C Calculator \n ");  
-    if (c == '/' )  
-    {  
-        printf (" You have selected: Division");  
-    }  
-    else if (c == '*')  
-    {  
-        printf (" You have selected: Multiplication");  
-     }  
-       
-    else if (c == '-')  
-    {  
-        printf (" You have selected: Subtraction");  
-     }  
-        else if (c == '+')  
-    {  
-        printf (" You have selected: Addition");  
-     }     
-      
     switch(c)  
     {  
         case '+':  
@@ -43,7 +25,7 @@ int Calculator(int a, char c, int b)
         case '/':  
             if (b == 0)   // if b == 0, take another number  
             {  
-                printf (" \n Divisor cannot be zero. Please enter another value ");  
+                // printf (" \n Divisor cannot be zero. Please enter another value ");  
                 b = 1;
             }  
             res = a / b; // divide two numbers  
