@@ -3,23 +3,23 @@
 
 int Calculator(int a, char c, int b)  
 {  
-    float res;  
+    int res;  
     // printf (" Choose an operator(+, -, *, /) to perform the operation in C Calculator \n ");  
     switch(c)  
     {  
         case '+':  
             res = a + b; // add two numbers  
-            // printf (" Addition of %d and %d is: %.2f", a, b, res);  
+            // printf (" Addition of %d and %d is: %d", a, b, res);  
             break;  
           
         case '-':  
             res = a - b; // subtract two numbers  
-            // printf (" Subtraction of %d and %d is: %.2f", a, b, res);  
+            // printf (" Subtraction of %d and %d is: %d", a, b, res);  
             break;  
               
         case '*':  
             res = a * b; // multiply two numbers  
-            // printf (" Multiplication of %d and %d is: %.2f", a, b, res);  
+            // printf (" Multiplication of %d and %d is: %d", a, b, res);  
             break;            
           
         case '/':  
@@ -29,11 +29,12 @@ int Calculator(int a, char c, int b)
                 b = 1;
             }  
             res = a / b; // divide two numbers  
-            // printf (" Division of %d and %d is: %.2f", a, b, res);  
+            // printf (" Division of %d and %d is: %d", a, b, res);  
             break;  
         default:  /* use default to print default message if any condition is not satisfied */  
-            printf (" Something is wrong!! Please check the options ");               
+            printf (" Something is wrong!! Please check the options ");  
+            break;               
     }  
-    int res_int = (int)res;
     return res;  
 }  
+
