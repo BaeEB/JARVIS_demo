@@ -179,7 +179,7 @@ Node* Delete(Node* node, int data)
         {
             node = NULL;
         }
-        else if (node->Left != NULL) //Original: node->Left != NULL && node->Right == NULL
+        else if (node->Left != NULL && node->Right == NULL) //Original: node->Left != NULL && node->Right == NULL
         {
             node->Left->Parent = node->Parent;
             node = node->Left;
