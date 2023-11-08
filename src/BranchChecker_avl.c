@@ -161,38 +161,45 @@ Node* GetMinNode(Node* node, Node* parent)
 
 Node* Delete(Node* node, int data)
 {
-    if (node == NULL) return NULL;
+    Node *deleteNode;
+    Node *minNode;
+
+    if (node == NULL)
+    {
+        return NULL;
+    }
 
     if (data < node->data)
     {
         node->Left = Delete(node->Left, data);
-        node = AVLSet(node);
     }
     else if (data > node->data)
     {
         node->Right = Delete(node->Right, data);
-        node = AVLSet(node);
     }
     else
     {
-        if (node->Left == NULL && node->Right == NULL)
+        if ((node->Left == NULL) && (node->Right == NULL))
         {
+            deleteNode = node;
             node = NULL;
         }
-        else if (node->Left != NULL) //Original: node->Left != NULL && node->Right == NULL
+        else if (node->Left != NULL)
         {
             node->Left->Parent = node->Parent;
+            deleteNode = node;
             node = node->Left;
         }
-        else if (node->Left == NULL && node->Right != NULL)
+        else if ((node->Left == NULL) && (node->Right != NULL))
         {
             node->Right->Parent = node->Parent;
+            deleteNode = node;
             node = node->Right;
         }
         else
         {
-            Node* deleteNode = node;
-            Node* minNode = GetMinNode(node->Right, deleteNode);
+            deleteNode = node;
+            minNode = GetMinNode(node->Right, deleteNode);
 
             minNode->Parent = node->Parent;
 
@@ -212,7 +219,11 @@ Node* Delete(Node* node, int data)
             free(deleteNode);
         }
     }
-
+    if (node != NULL)
+    {
+        node = AVLSet(node);
+    }
+    
     return node;
 }
 
