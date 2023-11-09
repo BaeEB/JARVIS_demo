@@ -1,2 +1,1 @@
-chmod 777 ./test
-./test
+make test
