@@ -1,1 +1,3 @@
-make all
+./autogen.sh
+./configure && make clean && make install
+make
