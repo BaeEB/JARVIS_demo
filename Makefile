@@ -200,8 +200,8 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/build-aux/missing \
 	$(top_srcdir)/src/win32/modbus.dll.manifest.in AUTHORS \
 	COPYING.LESSER NEWS build-aux/compile build-aux/config.guess \
-	build-aux/config.sub build-aux/install-sh build-aux/ltmain.sh \
-	build-aux/missing
+	build-aux/config.sub build-aux/depcomp build-aux/install-sh \
+	build-aux/ltmain.sh build-aux/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -244,14 +244,14 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/missing aclocal-1.16
+ACLOCAL = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/missing aclocal-1.16
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
 AR = ar
 AS = as
-AUTOCONF = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/missing autoconf
-AUTOHEADER = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/missing autoheader
-AUTOMAKE = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/missing automake-1.16
+AUTOCONF = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/missing autoconf
+AUTOHEADER = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/missing autoheader
+AUTOMAKE = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/missing automake-1.16
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -294,7 +294,7 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
-MAKEINFO = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/missing makeinfo
+MAKEINFO = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -317,10 +317,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = strip
 VERSION = 3.1.10
-abs_builddir = /mnt/d/Projects/libmodbus
-abs_srcdir = /mnt/d/Projects/libmodbus
-abs_top_builddir = /mnt/d/Projects/libmodbus
-abs_top_srcdir = /mnt/d/Projects/libmodbus
+abs_builddir = /mnt/d/iitp/IITP_JARVIS/JARVIS_demo
+abs_srcdir = /mnt/d/iitp/IITP_JARVIS/JARVIS_demo
+abs_top_builddir = /mnt/d/iitp/IITP_JARVIS/JARVIS_demo
+abs_top_srcdir = /mnt/d/iitp/IITP_JARVIS/JARVIS_demo
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -350,7 +350,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /mnt/d/Projects/libmodbus/build-aux/install-sh
+install_sh = ${SHELL} /mnt/d/iitp/IITP_JARVIS/JARVIS_demo/build-aux/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
