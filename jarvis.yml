@@ -9,11 +9,12 @@ docker-image:
 extra-build-env-setting-commands:
 
 test-candidates: |
-  fyz.c
+  src/modbus.c
 
 time-out: 3600
 test-build-command: | # 테스트 빌드 커맨드 / defect4cpp 기준 meta.json의 내용이 필요
-  make clean
+  ./autogen.sh
+  ./configure && make clean && make install
   make
 
 gcov-exclusion-list: | # 커버리지 제외 대상
