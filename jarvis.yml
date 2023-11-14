@@ -23,6 +23,3 @@ gcov-exclusion-list: | # 커버리지 제외 대상
 csbuild-path: "/home/euibin/tbeg/"
 
 openai-path: "/home/euibin/openai_key"
-
-
-csbuild-option: "--csccflag=cs_add_float_type=__float128;16<cs_delim>cs_add_float_type=_Float128;16<cs_delim>cs_add_float_type=__float80;10<cs_delim>cs_add_integer_type=__int128;16<cs_delim>cs_add_integer_type=__int80;10<cs_delim>cs_builtin_declaration=typedef float _Float32;<cs_delim>cs_builtin_declaration=typedef _Float32 _Float32x;<cs_delim>cs_builtin_declaration=typedef double _Float64;<cs_delim>cs_builtin_declaration=typedef _Float64 _Float64x;"
