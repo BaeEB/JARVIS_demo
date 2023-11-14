@@ -43,30 +43,33 @@ struct match_struct {
 };
 
 static void precompute_bonus(const char *haystack, score_t *match_bonus) {
-	/* Which positions are beginning of words */
-	char last_ch = '/';
-	for (int i = 0; haystack[i]; i++) {
-		char ch = haystack[i];
-		match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
-		last_ch = ch;
-	}
+    /* Which positions are beginning of words */
+    char last_ch = '/';
+    for (int i = 0; haystack[i] != '\0'; i++) { // Revise condition to explicitly compare with '\0'
+        char ch = haystack[i];
+        match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
+        last_ch = ch;
+    }
 }
 
 static void setup_match_struct(struct match_struct *match, const char *needle, const char *haystack) {
-	match->needle_len = strlen(needle);
-	match->haystack_len = strlen(haystack);
+    match->needle_len = strlen(needle);
+    match->haystack_len = strlen(haystack);
 
-	if (match->haystack_len > MATCH_MAX_LEN || match->needle_len > match->haystack_len) {
-		return;
-	}
+    if (match->haystack_len > MATCH_MAX_LEN || match->needle_len > match->haystack_len) {
+        // Returning early due to the condition, this is the only exit point.
+    } else {
+        for (int i = 0; i < match->needle_len; i++) {
+            match->lower_needle[i] = tolower(needle[i]);
+        }
 
-	for (int i = 0; i < match->needle_len; i++)
-		match->lower_needle[i] = tolower(needle[i]);
+        for (int i = 0; i < match->haystack_len; i++) {
+            match->lower_haystack[i] = tolower(haystack[i]);
+        }
 
-	for (int i = 0; i < match->haystack_len; i++)
-		match->lower_haystack[i] = tolower(haystack[i]);
-
-	precompute_bonus(haystack, match->match_bonus);
+        precompute_bonus(haystack, match->match_bonus);
+    }
+    // function should have a single point of exit at the end
 }
 
 static inline void match_row(const struct match_struct *match, int row, score_t *curr_D, score_t *curr_M, const score_t *last_D, const score_t *last_M) {
