@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "BranchChecker_avl.h"
 
-int curIndex = 0;
-
+static int curIndex = 0;
+        
 int GetHeight(Node* node)
 {
     if (node == NULL) return 0;
