@@ -37,7 +37,9 @@ Node* LL(Node* node)
     Node* childNode = node->Left;
     node->Left = childNode->Right;
     if (childNode->Right != NULL)
+    {
         childNode->Right->Parent = node;
+    }
 
     childNode->Right = node;
     childNode->Parent = node->Parent;
@@ -239,9 +241,10 @@ void Inorder(Node* node, int* result) {
     Inorder(node->Right, result);
 }
 
+#define SIZE 11
 int* getInorder(Node* node) {
-    int* result = (int*)malloc(sizeof(int) * 11);
-    for(int i = 0; i < 11; i++) {
+    static int result[SIZE]; /* Using static array instead of dynamic memory allocation */
+    for(int i = 0; i < SIZE; i++) {
         result[i] = 0;
     }
     Inorder(node, result);
