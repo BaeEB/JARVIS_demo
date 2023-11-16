@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include "BranchChecker_avl.h"
 
-int curIndex = 0;
+static int curIndex = 0;
 
 int GetHeight(Node* node)
 {
-    if (node == NULL) return 0;
+    int retVal = 0;
+    if (node != NULL)
+    {
+        int leftDepth = GetHeight(node->Left);
+        int rightDepth = GetHeight(node->Right);
 
-    int leftDepth = GetHeight(node->Left);
-    int rightDepth = GetHeight(node->Right);
-
-    return leftDepth > rightDepth ? leftDepth + 1 : rightDepth + 1;
+rightDepth + 1;
+    }
+    return retVal;
 }
 
 int CalculateBalanceFactor(Node* node)
@@ -131,6 +134,8 @@ Node* Insert(Node* node, int data)
 
 Node* GetMinNode(Node* node, Node* parent)
 {
+    Node* minNode = NULL;
+
     if (node->Left == NULL)
     {
         if (node->Parent != NULL)
@@ -144,19 +149,18 @@ Node* GetMinNode(Node* node, Node* parent)
                 node->Parent->Right = node->Right;
             }
 
-//            node->Right->Parent = node->Parent;
             if (node->Right != NULL)
             {
                 node->Right->Parent = node->Parent;
             }
         }
-
-        return node;
+        minNode = node;
     }
     else
     {
-        return GetMinNode(node->Left, parent);
+        minNode = GetMinNode(node->Left, parent);
     }
+    return minNode;
 }
 
 Node* Delete(Node* node, int data)
@@ -219,29 +223,40 @@ Node* Delete(Node* node, int data)
 
 
 void Inorder(Node* node, int* result) {
-    if (node == NULL) return;
-    if (curIndex >= 11) return;
+    Node* traverseNode = node;
+    int stackIndex = -1; /* Index of stack */
+    Node* nodeStack[11]; /* Stack of nodes */
 
-    Inorder(node->Left, result);
-
-    printf("%d \n", node->data);
-
-    if (node->Right != NULL) {
-        printf("Right: %d\n", node->Right->data);
-    }
-    if (node->Left != NULL) {
-        printf("Left: %d\n", node->Left->data);
+    /* Initialize (clear) the stack */
+    for (int i = 0; i < 11; ++i) {
+        nodeStack[i] = NULL;
     }
 
+    /* Repeat until no nodes are left to traverse */
+    while (traverseNode != NULL || stackIndex != -1) {
+        /* Reach the leftmost node, traversing and pushing nodes to the stack */
+        while (traverseNode != NULL) {
+            nodeStack[++stackIndex] = traverseNode;
+            traverseNode = traverseNode->Left;
+        }
 
-    result[curIndex] = node->data;
-    curIndex++;
-    Inorder(node->Right, result);
+        /* Pop a node from stack */
+        traverseNode = nodeStack[stackIndex--];
+
+        /* "Process" (replace the printf calls with required functionality) */
+        result[curIndex] = traverseNode->data;
+        curIndex++;
+
+        /* Go to the right node (or null if nonexistent) */
+        traverseNode = traverseNode->Right;
+    }
 }
 
+#define MAX_SIZE 11
+
 int* getInorder(Node* node) {
-    int* result = (int*)malloc(sizeof(int) * 11);
-    for(int i = 0; i < 11; i++) {
+    static int result[MAX_SIZE];
+    for(int i = 0; i < MAX_SIZE; i++) {
         result[i] = 0;
     }
     Inorder(node, result);
