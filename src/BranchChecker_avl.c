@@ -23,8 +23,9 @@ Node* RR(Node* node)
     Node* childNode = node->Right;
     node->Right = childNode->Left;
     if (childNode->Left != NULL)
+    {
         childNode->Left->Parent = node;
-
+    } 
     childNode->Left = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
