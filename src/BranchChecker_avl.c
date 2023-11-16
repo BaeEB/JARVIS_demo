@@ -52,12 +52,13 @@ Node* LR(Node* node)
     return LL(node);
 }
 
-Node* RL(Node* node)
-{
-    node->Right = LL(node->Right);
-    return RR(node);
-}
-
+    /* RL function is not used in other files */
+    static Node* RL(Node* node)
+    {
+        node->Right = LL(node->Right);
+        return RR(node);
+    }
+    
 Node* AVLSet(Node* node)
 {
     int depth = CalculateBalanceFactor(node);
