@@ -3,14 +3,22 @@
 
 int curIndex = 0;
 
-int GetHeight(Node* node)
+static int GetHeightHelper(Node* node) // static helper function
 {
-    if (node == NULL) return 0;
+    if (node == NULL)
+    {
+        return 0;
+    }
 
-    int leftDepth = GetHeight(node->Left);
-    int rightDepth = GetHeight(node->Right);
+    int leftDepth = GetHeightHelper(node->Left);
+    int rightDepth = GetHeightHelper(node->Right);
 
-    return leftDepth > rightDepth ? leftDepth + 1 : rightDepth + 1;
+rightDepth + 1;
+}
+
+int GetHeight(Node* node)  // Externally visible function
+{
+    return GetHeightHelper(node);
 }
 
 int CalculateBalanceFactor(Node* node)
@@ -37,8 +45,9 @@ Node* LL(Node* node)
     Node* childNode = node->Left;
     node->Left = childNode->Right;
     if (childNode->Right != NULL)
+    { 
         childNode->Right->Parent = node;
-
+    }
     childNode->Right = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
@@ -161,59 +170,74 @@ Node* GetMinNode(Node* node, Node* parent)
 
 Node* Delete(Node* node, int data)
 {
-    if (node == NULL) return NULL;
-
-    if (data < node->data)
+    Node* returnNode = NULL; 
+    
+    /* Applying rule 15.06 */
     {
-        node->Left = Delete(node->Left, data);
-        node = AVLSet(node);
-    }
-    else if (data > node->data)
-    {
-        node->Right = Delete(node->Right, data);
-        node = AVLSet(node);
-    }
-    else
-    {
-        if (node->Left == NULL && node->Right == NULL)
-        {
-            node = NULL;
-        }
-        else if (node->Left != NULL && node->Right == NULL) //Original: node->Left != NULL && node->Right == NULL
-        {
-            node->Left->Parent = node->Parent;
-            node = node->Left;
-        }
-        else if (node->Left == NULL && node->Right != NULL)
-        {
-            node->Right->Parent = node->Parent;
-            node = node->Right;
+        if (node == NULL) 
+        { 
+            returnNode = NULL; 
         }
         else
         {
-            Node* deleteNode = node;
-            Node* minNode = GetMinNode(node->Right, deleteNode);
-
-            minNode->Parent = node->Parent;
-
-            minNode->Left = deleteNode->Left;
-            if (deleteNode->Left != NULL)
+            if (data < node->data)
             {
-                deleteNode->Left->Parent = minNode;
+                node->Left = Delete(node->Left, data);
+                node = AVLSet(node);
+            }
+            else if (data > node->data)
+            {
+                node->Right = Delete(node->Right, data);
+                node = AVLSet(node);
+            }
+            /* Replaced else with else if */
+            else if (data == node->data)
+            {
+                if (node->Left == NULL && node->Right == NULL)
+                {
+                    node = NULL;
+                }
+                /* Applying rule 12.01 */
+                else if ((node->Left != NULL) && (node->Right == NULL))
+                {
+                    node->Left->Parent = node->Parent;
+                    node = node->Left;
+                }
+                else if ((node->Left == NULL) && (node->Right != NULL))
+                {
+                    node->Right->Parent = node->Parent;
+                    node = node->Right;
+                }
+                else
+                {
+                    Node* deleteNode = node;
+                    Node* minNode = GetMinNode(node->Right, deleteNode);
+
+                    minNode->Parent = node->Parent;
+                    minNode->Left = deleteNode->Left;
+
+                    if (deleteNode->Left != NULL)
+                    {
+                        deleteNode->Left->Parent = minNode;
+                    }
+
+                    minNode->Right = deleteNode->Right;
+
+                    if (deleteNode->Right != NULL)
+                    {
+                        deleteNode->Right->Parent = minNode;
+                    }
+
+                    node = minNode;
+
+                   /* Removed dynamic memory deallocation. If required, removed node should be deallocated outside this function. */
+                }
             }
 
-            minNode->Right = deleteNode->Right;
-            if (deleteNode->Right != NULL)
-            {
-                deleteNode->Right->Parent = minNode;
-            }
-
-            node = minNode;
-            free(deleteNode);
+            returnNode = node;
         }
     }
-
-    return node;
+    return returnNode;
 }
 
 
