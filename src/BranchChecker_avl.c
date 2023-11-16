@@ -46,11 +46,11 @@ Node* LL(Node* node)
     return childNode;
 }
 
-Node* LR(Node* node)
-{
-    node->Left = RR(node->Left);
-    return LL(node);
-}
+add static modifier to give internal linkage */
+        {
+            node->Left = RR(node->Left);
+            return LL(node);
+        }
 
 Node* RL(Node* node)
 {
