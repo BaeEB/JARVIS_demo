@@ -5,12 +5,28 @@ int curIndex = 0;
 
 int GetHeight(Node* node)
 {
-    if (node == NULL) return 0;
+    int returnVal = 0;
 
-    int leftDepth = GetHeight(node->Left);
-    int rightDepth = GetHeight(node->Right);
+    if (node != NULL)
+    {
+        int leftDepth = 0;
+        int rightDepth = 0;
+        Node* current = node;
+        while(current != NULL)
+        {
+            leftDepth++;
+            current = current->Left;
+        }
+        current = node;
+        while(current != NULL)
+        {
+            rightDepth++;
+            current = current->Right;
+        }
 
-    return leftDepth > rightDepth ? leftDepth + 1 : rightDepth + 1;
+rightDepth;
+    }
+    return returnVal;
 }
 
 int CalculateBalanceFactor(Node* node)
