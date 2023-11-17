@@ -23,8 +23,9 @@ Node* RR(Node* node)
     Node* childNode = node->Right;
     node->Right = childNode->Left;
     if (childNode->Left != NULL)
+    {
         childNode->Left->Parent = node;
-
+    }
     childNode->Left = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
@@ -32,13 +33,13 @@ Node* RR(Node* node)
     return childNode;
 }
 
-Node* LL(Node* node)
+static Node* LL(Node* node)
 {
     Node* childNode = node->Left;
     node->Left = childNode->Right;
-    if (childNode->Right != NULL)
+    if (childNode->Right != NULL) {
         childNode->Right->Parent = node;
-
+    }
     childNode->Right = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
