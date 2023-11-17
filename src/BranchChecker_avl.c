@@ -13,7 +13,7 @@ int GetHeight(Node* node)
     return leftDepth > rightDepth ? leftDepth + 1 : rightDepth + 1;
 }
 
-int CalculateBalanceFactor(Node* node)
+static int CalculateBalanceFactor(Node* node)
 {
     return GetHeight(node->Left) - GetHeight(node->Right);
 }
@@ -37,8 +37,9 @@ Node* LL(Node* node)
     Node* childNode = node->Left;
     node->Left = childNode->Right;
     if (childNode->Right != NULL)
+    {
         childNode->Right->Parent = node;
-
+    }
     childNode->Right = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
