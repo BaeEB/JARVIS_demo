@@ -36,9 +36,10 @@ Node* LL(Node* node)
 {
     Node* childNode = node->Left;
     node->Left = childNode->Right;
-    if (childNode->Right != NULL)
+    if (childNode->Right != NULL) // Not in compound-form
+    {
         childNode->Right->Parent = node;
-
+    }
     childNode->Right = node;
     childNode->Parent = node->Parent;
     node->Parent = childNode;
