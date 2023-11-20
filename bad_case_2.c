@@ -2,17 +2,18 @@
 
 int test1603(int x)
 {
-	switch(x)
-	{
-	case 1:
-	case 2:
-		x++;
-		break;
-	case 3:	
-		x--;
-	default:
-	    ;
-	}
+    switch(x)
+    {
+    case 1:
+    case 2:
+        x++;
+        break;
+    case 3:
+        x--;
+        break;
+    default:
+        break;
+    }
 
-	return x;
+    return x;
 }
