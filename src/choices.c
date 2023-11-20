@@ -93,9 +93,9 @@ static void choices_resize(choices_t *c, size_t new_capacity) {
 }
 
 static void choices_reset_search(choices_t *c) {
-	free(c->results);
-	c->selection = c->available = 0;
-	c->results = NULL;
+   /* Do not use memory deallocation function */
+   c->selection = c->available = 0;
+   c->results = NULL;
 }
 
 void choices_init(choices_t *c, options_t *options) {
