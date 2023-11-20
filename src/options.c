@@ -24,10 +24,12 @@ static const char *usage_str =
     " -v, --version  Output version information and exit\n";
 
 static void usage(const char *argv0) {
-	fprintf(stderr, usage_str, argv0);
+    /* Cast the return value of fprintf to void to indicate it is unused, 
+     * which is compliant with MISRA rule 17.07. */
+    (void)fprintf(stderr, usage_str, argv0);
 }
 
-static struct option longopts[] = {{"show-matches", required_argument, NULL, 'e'},
+static const struct option longopts[] = {{"show-matches", required_argument, NULL, 'e'},
 				   {"query", required_argument, NULL, 'q'},
 				   {"lines", required_argument, NULL, 'l'},
 				   {"tty", required_argument, NULL, 't'},
