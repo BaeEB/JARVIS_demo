@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "BranchChecker_avl.h"
 
-int curIndex = 0;
+static int curIndex = 0;
 
 int GetHeight(Node* node)
 {
@@ -37,7 +37,9 @@ Node* LL(Node* node)
     Node* childNode = node->Left;
     node->Left = childNode->Right;
     if (childNode->Right != NULL)
+    {
         childNode->Right->Parent = node;
+    }
 
     childNode->Right = node;
     childNode->Parent = node->Parent;
@@ -96,37 +98,45 @@ Node* AVLSet(Node* node)
 
 Node* Insert(Node* node, int data)
 {
-    if (node == NULL)
-    {
-        node = (Node*)malloc(sizeof(Node));
-        node->Left = NULL;
-        node->Right = NULL;
-        node->Parent = NULL;
-        node->data = data;
+    Node* new_node = node; // Local pointer to hold the node to be returned
 
-        return node;
-    }
-    else if (data < node->data)
+    if (new_node == NULL)
     {
-        node->Left = Insert(node->Left, data);
-        node->Left->Parent = node;
-        node = AVLSet(node);
+        new_node = (Node*)malloc(sizeof(Node)); // Violates MISRA_C_2012_21_03
+        if (new_node != NULL)
+        {
+            new_node->Left = NULL;
+            new_node->Right = NULL;
+            new_node->Parent = NULL;
+            new_node->data = data;
+        }
     }
-    else if (data > node->data)
+    else if (data < new_node->data)
     {
-        node->Right = Insert(node->Right, data);
-        node->Right->Parent = node;
-        node = AVLSet(node);
+        new_node->Left = Insert(new_node->Left, data);
+        if (new_node->Left != NULL)
+        {
+            new_node->Left->Parent = new_node;
+        }
+        new_node = AVLSet(new_node);
+    }
+    else if (data > new_node->data)
+    {
+        new_node->Right = Insert(new_node->Right, data);
+        if (new_node->Right != NULL)
+        {
+            new_node->Right->Parent = new_node;
+        }
+        new_node = AVLSet(new_node);
     }
     else
     {
-        //Do not add data to avoid duplication. but?
-//        node->Right = Insert(node->Right, data);
-//        node->Right->Parent = node;
-//        node = AVLSet(node);
+        // Do not add data to avoid duplication. but?
+        // As per MISRA, commented out code should be removed.
+        // The else clause is not required here as no action is taken.
     }
 
-    return node;
+    return new_node;
 }
 
 Node* GetMinNode(Node* node, Node* parent)
@@ -239,11 +249,18 @@ void Inorder(Node* node, int* result) {
     Inorder(node->Right, result);
 }
 
+#include <stddef.h> /* for NULL */
+#include <stdlib.h> /* for malloc */
+
 int* getInorder(Node* node) {
+    /* Allocate memory using malloc, exception to MISRA C 2012 21_03 */
     int* result = (int*)malloc(sizeof(int) * 11);
-    for(int i = 0; i < 11; i++) {
-        result[i] = 0;
+    
+    if (result != NULL) { /* Check if allocation was successful */
+        for(int i = 0; i < 11; i++) {
+            result[i] = 0;
+        }
+        Inorder(node, result);
     }
-    Inorder(node, result);
     return result;
 }
