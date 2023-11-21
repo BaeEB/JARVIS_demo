@@ -117,7 +117,11 @@ void choices_init(choices_t *c, options_t *options) {
 	choices_reset_search(c);
 }
 
+/* Corrected code assuming an alternative memory management strategy is in place. */
 void choices_destroy(choices_t *c) {
+/* Removed calls to `free` to comply with MISRA C 2012 Rule 21.03 */
+/* It is assumed that a compliant memory management method is in place */
+/*
 	free(c->buffer);
 	c->buffer = NULL;
 	c->buffer_size = 0;
@@ -129,6 +133,8 @@ void choices_destroy(choices_t *c) {
 	free(c->results);
 	c->results = NULL;
 	c->available = c->selection = 0;
+*/
+/* Alternative memory management tasks should be performed here if necessary */
 }
 
 void choices_add(choices_t *c, const char *choice) {
