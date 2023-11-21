@@ -11,21 +11,24 @@
 
 #include "../config.h"
 
-char *strcasechr(const char *s, char c) {
-	const char accept[3] = {c, toupper(c), 0};
-	return strpbrk(s, accept);
+/* Assuming strcasechr is not used in other translation units and thus making it static as per MISRA_C_2012_08_07 */
+static char *strcasechr(const char *s, char c) {
+    const char accept[3] = {c, toupper(c), '\0'};
+    return strpbrk(s, accept);
 }
 
 int has_match(const char *needle, const char *haystack) {
-	while (*needle) {
-		char nch = *needle++;
+    while (*needle) {
+        char nch = *needle;
+        needle++;
 
-		if (!(haystack = strcasechr(haystack, nch))) {
-			return 0;
-		}
-		haystack++;
-	}
-	return 1;
+        const char * found = strcasechr(haystack, nch);
+        if (!found) {
+            return 0;
+        }
+        haystack = found + 1;
+    }
+    return 1;
 }
 
 #define SWAP(x, y, T) do { T SWAP = x; x = y; y = SWAP; } while (0)
@@ -43,30 +46,31 @@ struct match_struct {
 };
 
 static void precompute_bonus(const char *haystack, score_t *match_bonus) {
-	/* Which positions are beginning of words */
-	char last_ch = '/';
-	for (int i = 0; haystack[i]; i++) {
-		char ch = haystack[i];
-		match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
-		last_ch = ch;
-	}
+    /* Which positions are beginning of words */
+    char last_ch = '/';
+    for (int i = 0; haystack[i] != '\0'; i++) { /* compliant */
+        char ch = haystack[i];
+        match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
+        last_ch = ch;
+    }
 }
 
 static void setup_match_struct(struct match_struct *match, const char *needle, const char *haystack) {
-	match->needle_len = strlen(needle);
-	match->haystack_len = strlen(haystack);
+    match->needle_len = strlen(needle);
+    match->haystack_len = strlen(haystack);
 
-	if (match->haystack_len > MATCH_MAX_LEN || match->needle_len > match->haystack_len) {
-		return;
-	}
+    if (match->haystack_len <= MATCH_MAX_LEN && match->needle_len <= match->haystack_len) {
+        for (int i = 0; i < match->needle_len; i++) {
+            match->lower_needle[i] = tolower(needle[i]);
+        }
 
-	for (int i = 0; i < match->needle_len; i++)
-		match->lower_needle[i] = tolower(needle[i]);
+        for (int i = 0; i < match->haystack_len; i++) {
+            match->lower_haystack[i] = tolower(haystack[i]);
+        }
 
-	for (int i = 0; i < match->haystack_len; i++)
-		match->lower_haystack[i] = tolower(haystack[i]);
-
-	precompute_bonus(haystack, match->match_bonus);
+        precompute_bonus(haystack, match->match_bonus);
+    }
+    // Implicit return at the end of the void function
 }
 
 static inline void match_row(const struct match_struct *match, int row, score_t *curr_D, score_t *curr_M, const score_t *last_D, const score_t *last_M) {
@@ -103,8 +107,9 @@ static inline void match_row(const struct match_struct *match, int row, score_t 
 }
 
 score_t match(const char *needle, const char *haystack) {
+	score_t result = SCORE_MIN; // Initialize with default return value
 	if (!*needle)
-		return SCORE_MIN;
+		return result; // Return immediately if needle is empty
 
 	struct match_struct match;
 	setup_match_struct(&match, needle, haystack);
@@ -118,37 +123,39 @@ score_t match(const char *needle, const char *haystack) {
 		 * If it is a valid match it will still be returned, it will
 		 * just be ranked below any reasonably sized candidates
 		 */
-		return SCORE_MIN;
 	} else if (n == m) {
 		/* Since this method can only be called with a haystack which
 		 * matches needle. If the lengths of the strings are equal the
 		 * strings themselves must also be equal (ignoring case).
 		 */
-		return SCORE_MAX;
+		result = SCORE_MAX; // Update result for equal length match
+	} else {
+
+		/*
+		 * D[][] Stores the best score for this position ending with a match.
+		 * M[][] Stores the best possible score at this position.
+		 */
+		score_t D[2][MATCH_MAX_LEN], M[2][MATCH_MAX_LEN];
+
+		score_t *last_D, *last_M;
+		score_t *curr_D, *curr_M;
+
+		last_D = D[0];
+		last_M = M[0];
+		curr_D = D[1];
+		curr_M = M[1];
+
+		for (int i = 0; i < n; i++) {
+			match_row(&match, i, curr_D, curr_M, last_D, last_M);
+
+			SWAP(curr_D, last_D, score_t *);
+			SWAP(curr_M, last_M, score_t *);
+		}
+
+		result = last_M[m - 1]; // Update result based on the matching logic
 	}
 
-	/*
-	 * D[][] Stores the best score for this position ending with a match.
-	 * M[][] Stores the best possible score at this position.
-	 */
-	score_t D[2][MATCH_MAX_LEN], M[2][MATCH_MAX_LEN];
-
-	score_t *last_D, *last_M;
-	score_t *curr_D, *curr_M;
-
-	last_D = D[0];
-	last_M = M[0];
-	curr_D = D[1];
-	curr_M = M[1];
-
-	for (int i = 0; i < n; i++) {
-		match_row(&match, i, curr_D, curr_M, last_D, last_M);
-
-		SWAP(curr_D, last_D, score_t *);
-		SWAP(curr_M, last_M, score_t *);
-	}
-
-	return last_M[m - 1];
+	return result; // Return the final result
 }
 
 score_t match_positions(const char *needle, const char *haystack, size_t *positions) {

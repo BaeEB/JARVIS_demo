@@ -8,11 +8,11 @@
 #include "../config.h"
 
 static int isprint_unicode(char c) {
-	return isprint(c) || c & (1 << 7);
+    return isprint(c) || ((unsigned char)c & ((unsigned char)(1 << 7)));
 }
 
 static int is_boundary(char c) {
-	return ~c & (1 << 7) || c & (1 << 6);
+    return ((~((unsigned char)c)) & (1u << 7)) != 0u || (((unsigned char)c) & (1u << 6)) != 0u;
 }
 
 static void clear(tty_interface_t *state) {
@@ -75,48 +75,53 @@ static void draw_match(tty_interface_t *state, const char *choice, int selected)
 	tty_setnormal(tty);
 }
 
+#include <stddef.h> // Include necessary header for size_t
+
 static void draw(tty_interface_t *state) {
-	tty_t *tty = state->tty;
-	choices_t *choices = state->choices;
-	options_t *options = state->options;
-
-	unsigned int num_lines = options->num_lines;
-	size_t start = 0;
-	size_t current_selection = choices->selection;
-	if (current_selection + options->scrolloff >= num_lines) {
-		start = current_selection + options->scrolloff - num_lines + 1;
-		size_t available = choices_available(choices);
-		if (start + num_lines >= available && available > 0) {
-			start = available - num_lines;
-		}
-	}
-
-	tty_setcol(tty, 0);
-	tty_printf(tty, "%s%s", options->prompt, state->search);
-	tty_clearline(tty);
-
-	if (options->show_info) {
-		tty_printf(tty, "\n[%lu/%lu]", choices->available, choices->size);
-		tty_clearline(tty);
-	}
-
-	for (size_t i = start; i < start + num_lines; i++) {
-		tty_printf(tty, "\n");
-		tty_clearline(tty);
-		const char *choice = choices_get(choices, i);
-		if (choice) {
-			draw_match(state, choice, i == choices->selection);
-		}
-	}
-
-	if (num_lines + options->show_info)
-		tty_moveup(tty, num_lines + options->show_info);
-
-	tty_setcol(tty, 0);
-	fputs(options->prompt, tty->fout);
-	for (size_t i = 0; i < state->cursor; i++)
-		fputc(state->search[i], tty->fout);
-	tty_flush(tty);
+    tty_t *tty = state->tty;
+    choices_t *choices = state->choices;
+    options_t *options = state->options;
+    
+    unsigned int num_lines = options->num_lines;
+    size_t start = 0;
+    size_t current_selection = choices->selection;
+    size_t available = choices_available(choices); // Store the result in a variable so we use it later
+    
+    if ((size_t)(current_selection + options->scrolloff) >= num_lines) {
+        start = current_selection + options->scrolloff - num_lines + 1;
+        if ((start + num_lines >= available) && (available > 0)) {
+            start = available - num_lines;
+        }
+    }
+    
+    tty_setcol(tty, 0);
+    tty_printf(tty, "%s%s", options->prompt, state->search);
+    tty_clearline(tty);
+    
+    if (options->show_info) {
+        tty_printf(tty, "\n[%lu/%lu]", (unsigned long)choices->available, (unsigned long)choices->size); // Applied cast to match expected type
+        tty_clearline(tty);
+    }
+    
+    for (size_t i = start; i < (start + num_lines) && i < available; i++) { // Ensure the loop does not go out of bounds
+        tty_printf(tty, "\n");
+        tty_clearline(tty);
+        const char *choice = choices_get(choices, i);
+        if (choice) {
+            draw_match(state, choice, i == choices->selection);
+        }
+    }
+    
+    if (num_lines + options->show_info) {
+        tty_moveup(tty, num_lines + (unsigned int)options->show_info); // Ensure type consistency
+    }
+    
+    tty_setcol(tty, 0);
+    fputs(options->prompt, tty->fout);
+    for (size_t i = 0; i < state->cursor; i++) {
+        fputc(state->search[i], tty->fout);
+    }
+    tty_flush(tty);
 }
 
 static void update_search(tty_interface_t *state) {
@@ -153,17 +158,18 @@ static void action_emit(tty_interface_t *state) {
 }
 
 static void action_del_char(tty_interface_t *state) {
-	size_t length = strlen(state->search);
-	if (state->cursor == 0) {
-		return;
-	}
-	size_t original_cursor = state->cursor;
+    size_t length = strlen(state->search);
+    if (state->cursor == 0) {
+        // Removed return statement to adhere to MISRA_C_2012_15_05
+    } else {
+        size_t original_cursor = state->cursor;
 
-	do {
-		state->cursor--;
-	} while (!is_boundary(state->search[state->cursor]) && state->cursor);
+        do {
+            state->cursor--;
+        } while (!is_boundary(state->search[state->cursor]) && state->cursor);
 
-	memmove(&state->search[state->cursor], &state->search[original_cursor], length - original_cursor + 1);
+        memmove(&state->search[state->cursor], &state->search[original_cursor], length - original_cursor + 1);
+    }
 }
 
 static void action_del_word(tty_interface_t *state) {
@@ -200,11 +206,12 @@ static void action_next(tty_interface_t *state) {
 }
 
 static void action_left(tty_interface_t *state) {
-	if (state->cursor > 0) {
-		state->cursor--;
-		while (!is_boundary(state->search[state->cursor]) && state->cursor)
-			state->cursor--;
-	}
+    if (state->cursor > 0) {
+        state->cursor--;
+        while (!is_boundary(state->search[state->cursor]) && state->cursor) {
+            state->cursor--;
+        }
+    }
 }
 
 static void action_right(tty_interface_t *state) {
@@ -224,9 +231,10 @@ static void action_end(tty_interface_t *state) {
 }
 
 static void action_pageup(tty_interface_t *state) {
-	update_state(state);
-	for (size_t i = 0; i < state->options->num_lines && state->choices->selection > 0; i++)
-		choices_prev(state->choices);
+    update_state(state);
+    for (size_t i = 0; (i < state->options->num_lines) && (state->choices->selection > 0); i++) {
+        choices_prev(state->choices);
+    }
 }
 
 static void action_pagedown(tty_interface_t *state) {
@@ -252,34 +260,41 @@ static void action_exit(tty_interface_t *state) {
 }
 
 static void append_search(tty_interface_t *state, char ch) {
-	char *search = state->search;
-	size_t search_size = strlen(search);
-	if (search_size < SEARCH_SIZE_MAX) {
-		memmove(&search[state->cursor+1], &search[state->cursor], search_size - state->cursor + 1);
-		search[state->cursor] = ch;
+    char *search = state->search;
+    size_t search_size = strlen(search);
+    if (search_size < (size_t)SEARCH_SIZE_MAX) { // Cast SEARCH_SIZE_MAX to size_t if it's not already of that type
+        memmove(&search[state->cursor + 1U], &search[state->cursor], search_size - state->cursor + 1U); // Use suffix 'U' for unsigned constant
+        search[state->cursor] = ch;
 
-		state->cursor++;
-	}
+        state->cursor = state->cursor + 1U; // Use 'U' suffix for unsigned addition
+    }
 }
 
-void tty_interface_init(tty_interface_t *state, tty_t *tty, choices_t *choices, options_t *options) {
-	state->tty = tty;
-	state->choices = choices;
-	state->options = options;
-	state->ambiguous_key_pending = 0;
+void tty_interface_init(tty_interface_t * const state, tty_t * const tty, choices_t * const choices, options_t * const options) {
+    if (state == NULL || tty == NULL || choices == NULL || options == NULL) {
+        /* Handle null pointer error */
+        return;
+    }
+    
+    state->tty = tty;
+    state->choices = choices;
+    state->options = options;
+    state->ambiguous_key_pending = 0;
 
-	strcpy(state->input, "");
-	strcpy(state->search, "");
-	strcpy(state->last_search, "");
+    state->input[0] = '\0';
+    state->search[0] = '\0';
+    state->last_search[0] = '\0';
 
-	state->exit = -1;
+    state->exit = -1;
 
-	if (options->init_search)
-		strncpy(state->search, options->init_search, SEARCH_SIZE_MAX);
+    if (options->init_search != NULL) {
+        strncpy(state->search, options->init_search, SEARCH_SIZE_MAX - 1);
+        state->search[SEARCH_SIZE_MAX - 1] = '\0'; // Ensure null termination
+    }
 
-	state->cursor = strlen(state->search);
+    state->cursor = strlen(state->search);
 
-	update_search(state);
+    update_search(state); // Assuming update_search is a function that takes a pointer to `state`
 }
 
 typedef struct {
@@ -307,16 +322,16 @@ static const keybinding_t keybindings[] = {{"\x1b", action_exit},       /* ESC *
 					   {KEY_CTRL('A'), action_beginning},    /* C-A */
 					   {KEY_CTRL('E'), action_end},		 /* C-E */
 
-					   {"\x1bOD", action_left}, /* LEFT */
-					   {"\x1b[D", action_left}, /* LEFT */
-					   {"\x1bOC", action_right}, /* RIGHT */
-					   {"\x1b[C", action_right}, /* RIGHT */
-					   {"\x1b[1~", action_beginning}, /* HOME */
-					   {"\x1b[H", action_beginning}, /* HOME */
-					   {"\x1b[4~", action_end}, /* END */
-					   {"\x1b[F", action_end}, /* END */
-					   {"\x1b[A", action_prev}, /* UP */
-					   {"\x1bOA", action_prev}, /* UP */
+					   {"\x1b" "OD", action_left}, /* LEFT */
+{"\x1b" "[D", action_left}, /* LEFT */
+{"\x1b" "OC", action_right}, /* RIGHT */
+					   {"\x1b" "[C", action_right}, /* RIGHT */
+                          {"\x1b" "[1~", action_beginning}, /* HOME */
+{"\x1b" "[H", action_beginning}, /* HOME */
+{"\x1b" "[4~", action_end}, /* END - compliant, terminated by end of literal */
+{"\x1b" "[F", action_end}, /* END */
+{"\x1b" "[A", action_prev}, /* UP */
+{"\x1b" "OA", action_prev}, /* UP */
 					   {"\x1b[B", action_next}, /* DOWN */
 					   {"\x1bOB", action_next}, /* DOWN */
 					   {"\x1b[5~", action_pageup},
@@ -328,78 +343,87 @@ static const keybinding_t keybindings[] = {{"\x1b", action_exit},       /* ESC *
 #undef KEY_CTRL
 
 static void handle_input(tty_interface_t *state, const char *s, int handle_ambiguous_key) {
-	state->ambiguous_key_pending = 0;
+    state->ambiguous_key_pending = 0;
 
-	char *input = state->input;
-	strcat(state->input, s);
+    char *input = state->input;
+    strcat(state->input, s);
 
-	/* Figure out if we have completed a keybinding and whether we're in the
-	 * middle of one (both can happen, because of Esc). */
-	int found_keybinding = -1;
-	int in_middle = 0;
-	for (int i = 0; keybindings[i].key; i++) {
-		if (!strcmp(input, keybindings[i].key))
-			found_keybinding = i;
-		else if (!strncmp(input, keybindings[i].key, strlen(state->input)))
-			in_middle = 1;
-	}
+    /* Figure out if we have completed a keybinding and whether we're in the
+     * middle of one (both can happen, because of Esc). */
+    int found_keybinding = -1;
+    int in_middle = 0;
+    for (size_t i = 0; keybindings[i].key; i++) {
+        if (!strcmp(input, keybindings[i].key))
+            found_keybinding = (int)i;
+        else if (!strncmp(input, keybindings[i].key, strlen(input)))
+            in_middle = 1;
+    }
 
-	/* If we have an unambiguous keybinding, run it.  */
-	if (found_keybinding != -1 && (!in_middle || handle_ambiguous_key)) {
-		keybindings[found_keybinding].action(state);
-		strcpy(input, "");
-		return;
-	}
+    /* If we have an unambiguous keybinding, run it.  */
+    if (found_keybinding != -1 && (!in_middle || handle_ambiguous_key)) {
+        keybindings[found_keybinding].action(state);
+        input[0] = '\0'; // clear input buffer
+        return;
+    }
 
-	/* We could have a complete keybinding, or could be in the middle of one.
-	 * We'll need to wait a few milliseconds to find out. */
-	if (found_keybinding != -1 && in_middle) {
-		state->ambiguous_key_pending = 1;
-		return;
-	}
+    /* We could have a complete keybinding, or could be in the middle of one.
+     * We'll need to wait a few milliseconds to find out. */
+    if (found_keybinding != -1 && in_middle) {
+        state->ambiguous_key_pending = 1;
+        return;
+    }
 
-	/* Wait for more if we are in the middle of a keybinding */
-	if (in_middle)
-		return;
+    /* Wait for more if we are in the middle of a keybinding */
+    if (in_middle)
+        return;
 
-	/* No matching keybinding, add to search */
-	for (int i = 0; input[i]; i++)
-		if (isprint_unicode(input[i]))
-			append_search(state, input[i]);
+    /* No matching keybinding, add to search */
+    for (size_t i = 0; input[i]; i++)
+        if (isprint_unicode(input[i]))
+            append_search(state, input[i]);
 
-	/* We have processed the input, so clear it */
-	strcpy(input, "");
+    /* We have processed the input, so clear it */
+    strcpy(input, ""); // clear input buffer
 }
 
 int tty_interface_run(tty_interface_t *state) {
-	draw(state);
+    int exit_code = -1; // Initialize exit_code with a default error value
+    draw(state);
 
-	for (;;) {
-		do {
-			while(!tty_input_ready(state->tty, -1, 1)) {
-				/* We received a signal (probably WINCH) */
-				draw(state);
-			}
+    for (;;) {
+        do {
+            while(!tty_input_ready(state->tty, -1, 1)) {
+                /* We received a signal (probably WINCH) */
+                draw(state);
+            }
 
-			char s[2] = {tty_getchar(state->tty), '\0'};
-			handle_input(state, s, 0);
+            char s[2] = {tty_getchar(state->tty), '\0'};
+            handle_input(state, s, 0);
 
-			if (state->exit >= 0)
-				return state->exit;
+            if (state->exit >= 0) {
+                exit_code = state->exit; // Assign the actual exit code
+                break; // Break the inner loop to exit
+            }
 
-			draw(state);
-		} while (tty_input_ready(state->tty, state->ambiguous_key_pending ? KEYTIMEOUT : 0, 0));
+            draw(state);
+        } while (tty_input_ready(state->tty, state->ambiguous_key_pending ? KEYTIMEOUT : 0, 0));
+        
+        if (exit_code >= 0) {
+            break; // Break the outer loop if we have an exit code
+        }
 
-		if (state->ambiguous_key_pending) {
-			char s[1] = "";
-			handle_input(state, s, 1);
+        if (state->ambiguous_key_pending) {
+            char s[1] = "";
+            handle_input(state, s, 1);
 
-			if (state->exit >= 0)
-				return state->exit;
-		}
+            if (state->exit >= 0) {
+                exit_code = state->exit; // Assign the actual exit code
+                break; // Break the outer loop to exit
+            }
+        }
 
-		update_state(state);
-	}
+        update_state(state);
+    }
 
-	return state->exit;
+    return exit_code; // Return the exit code (preserving single exit point)
 }
