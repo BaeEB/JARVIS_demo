@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "bad_case.h"
+#include "src/bad_case.h"
 
 int main() {
     short test00 = test0902(0,0,92);
