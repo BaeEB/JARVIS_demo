@@ -11,21 +11,28 @@
 
 #include "../config.h"
 
-char *strcasechr(const char *s, char c) {
-	const char accept[3] = {c, toupper(c), 0};
-	return strpbrk(s, accept);
+#include <ctype.h> /* Include the library where the `toupper` function is declared */
+#include <string.h> /* Include the library where the `strpbrk` function is declared */
+
+/* Since strcasechr is defined here, it is assumed that it's not used in other translation units.
+   Therefore, its linkage can and should be internal to comply with MISRA_C_2012_08_07. */
+
+static char *strcasechr(const char *s, char c) {
+    const char accept[3] = {c, (char)toupper((unsigned char)c), '\0'};
+    return strpbrk(s, accept);
 }
 
 int has_match(const char *needle, const char *haystack) {
-	while (*needle) {
-		char nch = *needle++;
+    while (*needle) {
+        char nch = *needle++;
 
-		if (!(haystack = strcasechr(haystack, nch))) {
-			return 0;
-		}
-		haystack++;
-	}
-	return 1;
+        const char *temp_haystack = strcasechr(haystack, nch);
+        if (!temp_haystack) {
+            return 0;
+        }
+        haystack = temp_haystack + 1;
+    }
+    return 1;
 }
 
 #define SWAP(x, y, T) do { T SWAP = x; x = y; y = SWAP; } while (0)
@@ -45,7 +52,7 @@ struct match_struct {
 static void precompute_bonus(const char *haystack, score_t *match_bonus) {
 	/* Which positions are beginning of words */
 	char last_ch = '/';
-	for (int i = 0; haystack[i]; i++) {
+	for (int i = 0; haystack[i] != '\0'; i++) { // Fixed the if-statement to check against '\0' explicitly
 		char ch = haystack[i];
 		match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
 		last_ch = ch;
@@ -53,53 +60,55 @@ static void precompute_bonus(const char *haystack, score_t *match_bonus) {
 }
 
 static void setup_match_struct(struct match_struct *match, const char *needle, const char *haystack) {
-	match->needle_len = strlen(needle);
-	match->haystack_len = strlen(haystack);
+    match->needle_len = strlen(needle);
+    match->haystack_len = strlen(haystack);
 
-	if (match->haystack_len > MATCH_MAX_LEN || match->needle_len > match->haystack_len) {
-		return;
-	}
+    // Check added to do the setup only if the conditions are met
+    if (match->haystack_len <= MATCH_MAX_LEN && match->needle_len <= match->haystack_len) {
+        for (int i = 0; i < match->needle_len; i++) { // Body of iteration made a compound-statement
+            match->lower_needle[i] = tolower(needle[i]);
+        }
 
-	for (int i = 0; i < match->needle_len; i++)
-		match->lower_needle[i] = tolower(needle[i]);
+        for (int i = 0; i < match->haystack_len; i++) { // Body of iteration made a compound-statement
+            match->lower_haystack[i] = tolower(haystack[i]);
+        }
 
-	for (int i = 0; i < match->haystack_len; i++)
-		match->lower_haystack[i] = tolower(haystack[i]);
-
-	precompute_bonus(haystack, match->match_bonus);
+        precompute_bonus(haystack, match->match_bonus);
+    }
+    // No return value is required as the function return type is 'void'
 }
 
 static inline void match_row(const struct match_struct *match, int row, score_t *curr_D, score_t *curr_M, const score_t *last_D, const score_t *last_M) {
-	int n = match->needle_len;
-	int m = match->haystack_len;
-	int i = row;
+    int n = match->needle_len;
+    int m = match->haystack_len;
+    int i = row;
 
-	const char *lower_needle = match->lower_needle;
-	const char *lower_haystack = match->lower_haystack;
-	const score_t *match_bonus = match->match_bonus;
+    const char *lower_needle = match->lower_needle;
+    const char *lower_haystack = match->lower_haystack;
+    const score_t *match_bonus = match->match_bonus;
 
-	score_t prev_score = SCORE_MIN;
-	score_t gap_score = i == n - 1 ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
+    score_t prev_score = SCORE_MIN;
+    score_t gap_score = (i == (n - 1)) ? SCORE_GAP_TRAILING : SCORE_GAP_INNER;
 
-	for (int j = 0; j < m; j++) {
-		if (lower_needle[i] == lower_haystack[j]) {
-			score_t score = SCORE_MIN;
-			if (!i) {
-				score = (j * SCORE_GAP_LEADING) + match_bonus[j];
-			} else if (j) { /* i > 0 && j > 0*/
-				score = max(
-						last_M[j - 1] + match_bonus[j],
+    for (int j = 0; j < m; j++) {
+        if (lower_needle[i] == lower_haystack[j]) {
+            score_t score = SCORE_MIN;
+            if (!i) {
+                score = ((j * SCORE_GAP_LEADING) + match_bonus[j]);
+            } else if (j) { /* i > 0 && j > 0*/
+                score = max(
+                        (last_M[j - 1] + match_bonus[j]),
 
-						/* consecutive match, doesn't stack with match_bonus */
-						last_D[j - 1] + SCORE_MATCH_CONSECUTIVE);
-			}
-			curr_D[j] = score;
-			curr_M[j] = prev_score = max(score, prev_score + gap_score);
-		} else {
-			curr_D[j] = SCORE_MIN;
-			curr_M[j] = prev_score = prev_score + gap_score;
-		}
-	}
+                        /* consecutive match, doesn't stack with match_bonus */
+                        (last_D[j - 1] + SCORE_MATCH_CONSECUTIVE));
+            }
+            curr_D[j] = score;
+            curr_M[j] = prev_score = max(score, (prev_score + gap_score));
+        } else {
+            curr_D[j] = SCORE_MIN;
+            curr_M[j] = prev_score = (prev_score + gap_score);
+        }
+    }
 }
 
 score_t match(const char *needle, const char *haystack) {

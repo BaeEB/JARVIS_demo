@@ -24,10 +24,15 @@ static const char *usage_str =
     " -v, --version  Output version information and exit\n";
 
 static void usage(const char *argv0) {
-	fprintf(stderr, usage_str, argv0);
+	if (fprintf(stderr, usage_str, argv0) < 0) {
+		// Handle the error according to system-specific requirements.
+		// For this example, we can't provide a concrete implementation, 
+		// so we'll just leave an empty block or possibly log the error
+		// depending on the system's error handling strategy.
+	}
 }
 
-static struct option longopts[] = {{"show-matches", required_argument, NULL, 'e'},
+static const struct option longopts[] = {{"show-matches", required_argument, NULL, 'e'},
 				   {"query", required_argument, NULL, 'q'},
 				   {"lines", required_argument, NULL, 'l'},
 				   {"tty", required_argument, NULL, 't'},
