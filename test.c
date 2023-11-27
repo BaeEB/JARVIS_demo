@@ -74,33 +74,28 @@ int expected_output7[TEST_SIZE][11] = {
 };
 
 // int main(int argc, char *argv[])
-int main() {
-// #ifdef GCOV
-// 	  {
-// 		  dpp_gcov_sigaction.sa_handler = dpp_sighandler;
-// 		  sigemptyset(&dpp_gcov_sigaction.sa_mask);
-// 		  dpp_gcov_sigaction.sa_flags = 0;
-// 		  sigaction(SIGSEGV, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-// 		  sigaction(SIGFPE, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-// 		  sigaction(SIGABRT, &dpp_gcov_sigaction, &dpp_orig_sigaction);
-// 	  }
-// #endif
-//     int test_case = atoi(argv[1]);
-//     int test_index = atoi(argv[2]); //e.q. ./test 2 3
-    bool compare = true;
+#include <stdio.h>  // Required for printf
+#include <stdbool.h> // Required for bool type
 
-    int result = Calculator(1, '+', 2);
-    compare = (result==3);
+// Assuming Calculator is a previously defined function with the following signature:
+// `int Calculator(int operand1, char operator, int operand2);`
+
+int main(void) {
+    bool compare = true;
+    int result = 0;
+
+    result = Calculator(1, '+', 2);
+    compare = (result == 3);
+    
     result = Calculator(1, '-', 2);
-    compare = (result==-1);
+    compare = compare && (result == -1);
 
     if (compare) {
-        printf("PASS!\n");
-        return 0;
+        (void)printf("PASS!\n");
     }         
     else {
-        printf("FAIL!\n");
-        return -1;
+        (void)printf("FAIL!\n");
     }
 
+-1;
 }
