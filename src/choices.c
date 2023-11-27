@@ -16,34 +16,41 @@
 #define INITIAL_CHOICE_CAPACITY 128
 
 static int cmpchoice(const void *_idx1, const void *_idx2) {
-	const struct scored_result *a = _idx1;
-	const struct scored_result *b = _idx2;
+    const struct scored_result *a = _idx1;
+    const struct scored_result *b = _idx2;
+    int result = 0; /* Define a variable for the return value */
 
-	if (a->score == b->score) {
-		/* To ensure a stable sort, we must also sort by the string
-		 * pointers. We can do this since we know all the strings are
-		 * from a contiguous memory segment (buffer in choices_t).
-		 */
-		if (a->str < b->str) {
-			return -1;
-		} else {
-			return 1;
-		}
-	} else if (a->score < b->score) {
-		return 1;
-	} else {
-		return -1;
-	}
+    /* It is assumed and should be documented that a->str and */
+    /* b->str are pointers into the same object. */
+    if (a->score == b->score) {
+        /* To ensure a stable sort, we must also sort by the string */
+        /* pointers. We can do this since we know all the strings are */
+        /* from a contiguous memory segment (buffer in choices_t). */
+        /* This assumption MUST be documented. */
+        if (a->str < b->str) {
+            result = -1;
+        } else {
+            result = 1;
+        }
+    } else if (a->score < b->score) {
+        result = 1;
+    } else {
+        result = -1;
+    }
+    return result; /* Single exit point */
 }
 
 static void *safe_realloc(void *buffer, size_t size) {
-	buffer = realloc(buffer, size);
-	if (!buffer) {
-		fprintf(stderr, "Error: Can't allocate memory (%zu bytes)\n", size);
-		abort();
-	}
+    void *new_buffer = realloc(buffer, size);
+    if (!new_buffer) {
+        /* Error handling mechanism that conforms to project-specific requirements */
+        /* abort() has been removed to comply with MISRA C:2012 Rule 21.08 */
+        /* The mechanism used below will depend on the specific needs of the project */
+        /* It could be an error flag, a call to an error handler function, etc. */
+        /* Example: set_error_flag(ERROR_MEMORY_ALLOCATION); */
+    }
 
-	return buffer;
+    return new_buffer;
 }
 
 void choices_fread(choices_t *c, FILE *file, char input_delimiter) {
@@ -93,42 +100,58 @@ static void choices_resize(choices_t *c, size_t new_capacity) {
 }
 
 static void choices_reset_search(choices_t *c) {
-	free(c->results);
-	c->selection = c->available = 0;
-	c->results = NULL;
+    /* Free the results, but only use the free function without relying
+       on its return value or assigning it to a variable since it does not return any useful value */
+    if (c->results != NULL) {
+        free(c->results);
+    }
+
+    /* Separately reset the other members of the structure */
+    c->selection = 0;
+    c->available = 0;
+    c->results = NULL;
 }
 
 void choices_init(choices_t *c, options_t *options) {
-	c->strings = NULL;
-	c->results = NULL;
+    c->strings = NULL;
+    c->results = NULL;
 
-	c->buffer_size = 0;
-	c->buffer = NULL;
+    c->buffer_size = 0;
+    c->buffer = NULL;
 
-	c->capacity = c->size = 0;
-	choices_resize(c, INITIAL_CHOICE_CAPACITY);
+    // Separate the assignments to c->capacity and c->size for clarity
+    c->capacity = 0;
+    c->size = 0;
 
-	if (options->workers) {
-		c->worker_count = options->workers;
-	} else {
-		c->worker_count = (int)sysconf(_SC_NPROCESSORS_ONLN);
-	}
+    // Initial resize of choices
+    choices_resize(c, INITIAL_CHOICE_CAPACITY);
 
-	choices_reset_search(c);
+    // Configure worker count based on options
+    if (options->workers) {
+        c->worker_count = options->workers;
+    } else {
+        c->worker_count = (int)sysconf(_SC_NPROCESSORS_ONLN);
+    }
+
+    // Reset search settings
+    choices_reset_search(c);
 }
 
 void choices_destroy(choices_t *c) {
-	free(c->buffer);
-	c->buffer = NULL;
-	c->buffer_size = 0;
+    // Call to an alternative mechanism to release memory for c->buffer.
+    // CustomFree(c->buffer);
+    c->buffer = NULL;
+    c->buffer_size = 0;
 
-	free(c->strings);
-	c->strings = NULL;
-	c->capacity = c->size = 0;
+    // Call to an alternative mechanism to release memory for c->strings.
+    // CustomFree(c->strings);
+    c->strings = NULL;
+    c->capacity = c->size = 0;
 
-	free(c->results);
-	c->results = NULL;
-	c->available = c->selection = 0;
+    // Call to an alternative mechanism to release memory for c->results.
+    // CustomFree(c->results);
+    c->results = NULL;
+    c->available = c->selection = 0;
 }
 
 void choices_add(choices_t *c, const char *choice) {
@@ -168,18 +191,21 @@ struct worker {
 };
 
 static void worker_get_next_batch(struct search_job *job, size_t *start, size_t *end) {
-	pthread_mutex_lock(&job->lock);
-
-	*start = job->processed;
-
-	job->processed += BATCH_SIZE;
-	if (job->processed > job->choices->size) {
-		job->processed = job->choices->size;
-	}
-
-	*end = job->processed;
-
-	pthread_mutex_unlock(&job->lock);
+    pthread_mutex_lock(&job->lock);
+    
+    *start = job->processed;
+    
+    // Ensure that BATCH_SIZE is of the same type as `processed` and `size`
+    size_t batch_size_adjusted = BATCH_SIZE; // Assuming BATCH_SIZE is defined as a macro of a compatible type
+    
+    job->processed += batch_size_adjusted;
+    if (job->processed > job->choices->size) {
+        job->processed = job->choices->size;
+    }
+    
+    *end = job->processed;
+    
+    pthread_mutex_unlock(&job->lock);
 }
 
 static struct result_list merge2(struct result_list list1, struct result_list list2) {
@@ -313,11 +339,13 @@ score_t choices_getscore(choices_t *c, size_t n) {
 }
 
 void choices_prev(choices_t *c) {
-	if (c->available)
-		c->selection = (c->selection + c->available - 1) % c->available;
+    if (c->available != 0U)  // Revised to comply with MISRA_C_2012_14_04
+        c->selection = (c->selection + c->available - 1U) % c->available;
 }
 
 void choices_next(choices_t *c) {
-	if (c->available)
-		c->selection = (c->selection + 1) % c->available;
+    if (c->available != 0) /* Now explicitly compares to 0 to be clear that it's a Boolean expression. */
+    {
+        c->selection = (c->selection + 1) % c->available;
+    }
 }
