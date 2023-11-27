@@ -1,39 +1,38 @@
 #include <stdio.h>
 #include "Calculator.h"
 
-int Calculator(int a, char c, int b)  
+#include <stdio.h>  // Required for printf
+
+int Calculator(int a, char c, int b)
 {  
-    float res;  
-    // printf (" Choose an operator(+, -, *, /) to perform the operation in C Calculator \n ");  
-    switch(c)  
-    {  
-        case '+':  
-            res = a + b; // add two numbers  
-            // printf (" Addition of %d and %d is: %.2f", a, b, res);  
-            break;  
-          
-        case '-':  
-            res = a - b; // subtract two numbers  
-            // printf (" Subtraction of %d and %d is: %.2f", a, b, res);  
-            break;  
-              
-        case '*':  
-            res = a * b; // multiply two numbers  
-            // printf (" Multiplication of %d and %d is: %.2f", a, b, res);  
-            break;            
-          
-        case '/':  
-            if (b == 0)   // if b == 0, take another number  
+    int res_int;  // Use int to store result
+    switch(c)
+    {
+        case '+':
+            res_int = a + b;  // add two numbers
+            break;
+            
+        case '-':
+            res_int = a - b;  // subtract two numbers
+            break;
+            
+        case '*':
+            res_int = a * b;  // multiply two numbers
+            break;
+            
+        case '/':
+            if (b == 0)  // if b == 0, take another number
             {  
-                // printf (" \n Divisor cannot be zero. Please enter another value ");  
                 b = 1;
             }  
-            res = a / b; // divide two numbers  
-            // printf (" Division of %d and %d is: %.2f", a, b, res);  
-            break;  
-        default:  /* use default to print default message if any condition is not satisfied */  
-            printf (" Something is wrong!! Please check the options ");               
-    }  
-    int res_int = (int)res;
-    return res;  
-}  
+            res_int = a / b;  // divide two numbers
+            break;
+            
+ /* use default to print default message if any condition is not satisfied */
+            res_int = 0; // Set default result to 0
+            printf(" Something is wrong!! Please check the options ");
+            break; // Add break to terminate default case properly
+    }
+    
+    return res_int; // return the integer result
+}
