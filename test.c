@@ -62,7 +62,9 @@ int expected_output6[TEST_SIZE][11] = {
     {-13, -8, -2, 6, 24, 31, 36, 40, 76}
 };
 
-int expected_output7[TEST_SIZE][11] = {
+/* expected_output7 is not used in other files */
+static int expected_output7[TEST_SIZE][11] = {
+
     {20, 25, 32, 55},
     {6, 8, 30},
     {1, 2, 3, 4, 7},
