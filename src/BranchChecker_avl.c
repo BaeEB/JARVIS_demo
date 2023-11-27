@@ -5,12 +5,21 @@ int curIndex = 0;
 
 int GetHeight(Node* node)
 {
-    if (node == NULL) return 0;
+    int height = 0; // Single point of exit with an initialized variable
+    
+    if (node == NULL) // Body enclosed in braces for rule 15.06
+    {
+        height = 0;
+    }
+    else
+    {
+        int leftDepth = GetHeight(node->Left);
+        int rightDepth = GetHeight(node->Right);
 
-    int leftDepth = GetHeight(node->Left);
-    int rightDepth = GetHeight(node->Right);
-
-    return leftDepth > rightDepth ? leftDepth + 1 : rightDepth + 1;
+(rightDepth + 1); // Precedences made explicit
+    }
+    
+    return height; // Single point of exit
 }
 
 int CalculateBalanceFactor(Node* node)
@@ -89,6 +98,11 @@ Node* AVLSet(Node* node)
             node = RL(node);
         }
 
+    }
+    else
+    {
+        // Final else case added to comply with MISRA_C_2012_15_07
+        // Node already balanced or requires no rotation
     }
 
     return node;
@@ -239,11 +253,14 @@ void Inorder(Node* node, int* result) {
     Inorder(node->Right, result);
 }
 
+#define INORDER_SIZE 11
+
+int inorder_result[INORDER_SIZE];
+
 int* getInorder(Node* node) {
-    int* result = (int*)malloc(sizeof(int) * 11);
-    for(int i = 0; i < 11; i++) {
-        result[i] = 0;
+    for(int i = 0; i < INORDER_SIZE; i++) {
+        inorder_result[i] = 0;
     }
-    Inorder(node, result);
-    return result;
+    Inorder(node, inorder_result);
+    return inorder_result;
 }
