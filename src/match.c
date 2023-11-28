@@ -11,21 +11,27 @@
 
 #include "../config.h"
 
-char *strcasechr(const char *s, char c) {
-	const char accept[3] = {c, toupper(c), 0};
-	return strpbrk(s, accept);
+#include <ctype.h>    /* for toupper declaration */
+#include <string.h>   /* for strpbrk declaration */
+
+static char *strcasechr(const char *s, char c) {
+    const char accept[3] = {c, toupper(c), 0};
+    return strpbrk(s, accept);
 }
 
-int has_match(const char *needle, const char *haystack) {
-	while (*needle) {
-		char nch = *needle++;
+#include <string.h> // Assuming strcasechr is a function similar to those in <string.h>
 
-		if (!(haystack = strcasechr(haystack, nch))) {
-			return 0;
-		}
-		haystack++;
-	}
-	return 1;
+int has_match(const char *needle, const char *haystack) {
+    const char *haystack_iter = haystack; // create a copy of haystack pointer to iterate over it without modifying the parameter
+    while (*needle) {
+        char nch = *needle++;
+        haystack_iter = strcasechr(haystack_iter, nch); // use the copy for any changes
+        if (!haystack_iter) {
+            return 0;
+        }
+        haystack_iter++; // increment copy instead of the function parameter
+    }
+    return 1;
 }
 
 #define SWAP(x, y, T) do { T SWAP = x; x = y; y = SWAP; } while (0)
@@ -45,7 +51,7 @@ struct match_struct {
 static void precompute_bonus(const char *haystack, score_t *match_bonus) {
 	/* Which positions are beginning of words */
 	char last_ch = '/';
-	for (int i = 0; haystack[i]; i++) {
+	for (int i = 0; haystack[i] != '\0'; i++) { /* compliant */
 		char ch = haystack[i];
 		match_bonus[i] = COMPUTE_BONUS(last_ch, ch);
 		last_ch = ch;
@@ -151,88 +157,61 @@ score_t match(const char *needle, const char *haystack) {
 	return last_M[m - 1];
 }
 
+#define MATCH_MAX_LEN 256  // Example buffer size limit
+
 score_t match_positions(const char *needle, const char *haystack, size_t *positions) {
-	if (!*needle)
-		return SCORE_MIN;
+    if (!*needle)
+        return SCORE_MIN;
 
-	struct match_struct match;
-	setup_match_struct(&match, needle, haystack);
+    struct match_struct match;
+    setup_match_struct(&match, needle, haystack);
 
-	int n = match.needle_len;
-	int m = match.haystack_len;
+    int n = match.needle_len;
+    int m = match.haystack_len;
 
-	if (m > MATCH_MAX_LEN || n > m) {
-		/*
-		 * Unreasonably large candidate: return no score
-		 * If it is a valid match it will still be returned, it will
-		 * just be ranked below any reasonably sized candidates
-		 */
-		return SCORE_MIN;
-	} else if (n == m) {
-		/* Since this method can only be called with a haystack which
-		 * matches needle. If the lengths of the strings are equal the
-		 * strings themselves must also be equal (ignoring case).
-		 */
-		if (positions)
-			for (int i = 0; i < n; i++)
-				positions[i] = i;
-		return SCORE_MAX;
-	}
+    if (m > MATCH_MAX_LEN || n > m) {
+        return SCORE_MIN;
+    } else if (n == m) {
+        if (positions)
+            for (int i = 0; i < n; i++)
+                positions[i] = i;
+        return SCORE_MAX;
+    }
 
-	/*
-	 * D[][] Stores the best score for this position ending with a match.
-	 * M[][] Stores the best possible score at this position.
-	 */
-	score_t (*D)[MATCH_MAX_LEN], (*M)[MATCH_MAX_LEN];
-	M = malloc(sizeof(score_t) * MATCH_MAX_LEN * n);
-	D = malloc(sizeof(score_t) * MATCH_MAX_LEN * n);
+    score_t D[MATCH_MAX_LEN][MATCH_MAX_LEN];
+    score_t M[MATCH_MAX_LEN][MATCH_MAX_LEN];
 
-	score_t *last_D, *last_M;
-	score_t *curr_D, *curr_M;
+    score_t *last_D = NULL;
+    score_t *last_M = NULL;
+    score_t *curr_D;
+    score_t *curr_M;
 
-	for (int i = 0; i < n; i++) {
-		curr_D = &D[i][0];
-		curr_M = &M[i][0];
+    for (int i = 0; i < n; i++) {
+        curr_D = &D[i][0];
+        curr_M = &M[i][0];
 
-		match_row(&match, i, curr_D, curr_M, last_D, last_M);
+        match_row(&match, i, curr_D, curr_M, last_D, last_M);
 
-		last_D = curr_D;
-		last_M = curr_M;
-	}
+        last_D = curr_D;
+        last_M = curr_M;
+    }
 
-	/* backtrace to find the positions of optimal matching */
-	if (positions) {
-		int match_required = 0;
-		for (int i = n - 1, j = m - 1; i >= 0; i--) {
-			for (; j >= 0; j--) {
-				/*
-				 * There may be multiple paths which result in
-				 * the optimal weight.
-				 *
-				 * For simplicity, we will pick the first one
-				 * we encounter, the latest in the candidate
-				 * string.
-				 */
-				if (D[i][j] != SCORE_MIN &&
-				    (match_required || D[i][j] == M[i][j])) {
-					/* If this score was determined using
-					 * SCORE_MATCH_CONSECUTIVE, the
-					 * previous character MUST be a match
-					 */
-					match_required =
-					    i && j &&
-					    M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
-					positions[i] = j--;
-					break;
-				}
-			}
-		}
-	}
+    if (positions) {
+        int match_required = 0;
+        for (int i = n - 1, j = m - 1; i >= 0; i--) {
+            for (; j >= 0; j--) {
+                if (D[i][j] != SCORE_MIN &&
+                    (match_required || D[i][j] == M[i][j])) {
+                    match_required = i && j &&
+                                     M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE;
+                    positions[i] = j--;
+                    break;
+                }
+            }
+        }
+    }
 
-	score_t result = M[n - 1][m - 1];
+    score_t result = M[n - 1][m - 1];
 
-	free(M);
-	free(D);
-
-	return result;
+    return result;
 }
