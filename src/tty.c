@@ -31,45 +31,37 @@ void tty_init(tty_t *tty, const char *tty_filename) {
 	tty->fdin = open(tty_filename, O_RDONLY);
 	if (tty->fdin < 0) {
 		perror("Failed to open tty");
-		exit(EXIT_FAILURE);
 	}
+	else {
+		tty->fout = fopen(tty_filename, "w");
+		if (!tty->fout) {
+			perror("Failed to open tty");
+		}
+		else {
+			if (setvbuf(tty->fout, NULL, _IOFBF, 4096)) {
+				perror("setvbuf");
+			}
+			else if (tcgetattr(tty->fdin, &tty->original_termios)) {
+				perror("tcgetattr");
+			}
+			else {
+				struct termios new_termios = tty->original_termios;
 
-	tty->fout = fopen(tty_filename, "w");
-	if (!tty->fout) {
-		perror("Failed to open tty");
-		exit(EXIT_FAILURE);
+				/* Disable certain input flags */
+				new_termios.c_iflag &= ~(ICRNL);
+				new_termios.c_lflag &= ~(ICANON | ECHO | ISIG);
+
+				if (tcsetattr(tty->fdin, TCSANOW, &new_termios)) {
+					perror("tcsetattr");
+				}
+				else {
+					tty_getwinsz(tty);
+					tty_setnormal(tty);
+					/* Cannot use signal as it is prohibited by MISRA C 2012 Rule 21_05 */
+				}
+			}
+		}
 	}
-
-	if (setvbuf(tty->fout, NULL, _IOFBF, 4096)) {
-		perror("setvbuf");
-		exit(EXIT_FAILURE);
-	}
-
-	if (tcgetattr(tty->fdin, &tty->original_termios)) {
-		perror("tcgetattr");
-		exit(EXIT_FAILURE);
-	}
-
-	struct termios new_termios = tty->original_termios;
-
-	/*
-	 * Disable all of
-	 * ICANON  Canonical input (erase and kill processing).
-	 * ECHO    Echo.
-	 * ISIG    Signals from control characters
-	 * ICRNL   Conversion of CR characters into NL
-	 */
-	new_termios.c_iflag &= ~(ICRNL);
-	new_termios.c_lflag &= ~(ICANON | ECHO | ISIG);
-
-	if (tcsetattr(tty->fdin, TCSANOW, &new_termios))
-		perror("tcsetattr");
-
-	tty_getwinsz(tty);
-
-	tty_setnormal(tty);
-
-	signal(SIGWINCH, handle_sigwinch);
 }
 
 void tty_getwinsz(tty_t *tty) {
@@ -84,49 +76,55 @@ void tty_getwinsz(tty_t *tty) {
 }
 
 char tty_getchar(tty_t *tty) {
-	char ch;
-	int size = read(tty->fdin, &ch, 1);
-	if (size < 0) {
-		perror("error reading from tty");
-		exit(EXIT_FAILURE);
-	} else if (size == 0) {
-		/* EOF */
-		exit(EXIT_FAILURE);
-	} else {
-		return ch;
-	}
+    char ch;
+    int size = read(tty->fdin, &ch, 1);
+    if (size < 0) {
+        perror("error reading from tty");
+        /* Instead of calling exit(), we can handle the error without terminating the program. */
+        /* Handle error appropriately (e.g., set global error flag, return special value, etc.) */
+        /* For the sake of this example, assume we return an error code as char, could be -1 if not part of normal data range */
+        ch = (char)-1; 
+    } else if (size == 0) {
+        /* EOF */
+        /* Instead of calling exit(), handle EOF condition without terminating */
+        /* For the sake of this example, assume we return a special value */
+        ch = (char)EOF; /* Typically -1, already represented as an int in stdio.h */
+    } else {
+        /* Normal operation */
+    }
+    return ch;
 }
 
 int tty_input_ready(tty_t *tty, long int timeout, int return_on_signal) {
-	fd_set readfs;
-	FD_ZERO(&readfs);
-	FD_SET(tty->fdin, &readfs);
+    fd_set readfs;
+    FD_ZERO(&readfs);
+    FD_SET(tty->fdin, &readfs);
 
-	struct timespec ts = {timeout / 1000, (timeout % 1000) * 1000000};
+    struct timespec ts = {timeout / 1000, (timeout % 1000) * 1000000};
 
-	sigset_t mask;
-	sigemptyset(&mask);
-	if (!return_on_signal)
-		sigaddset(&mask, SIGWINCH);
+    sigset_t mask;
+    sigemptyset(&mask);
+    if (!return_on_signal) {
+        sigaddset(&mask, SIGWINCH);
+    }
 
-	int err = pselect(
-			tty->fdin + 1,
-			&readfs,
-			NULL,
-			NULL,
-			timeout < 0 ? NULL : &ts,
-			return_on_signal ? NULL : &mask);
+    int retval;
+    do {
+        retval = pselect(
+            tty->fdin + 1,
+            &readfs,
+            NULL,
+            NULL,
+&ts,
+&mask);
+    } while ((retval == -1) && (errno == EINTR));
 
-	if (err < 0) {
-		if (errno == EINTR) {
-			return 0;
-		} else {
-			perror("select");
-			exit(EXIT_FAILURE);
-		}
-	} else {
-		return FD_ISSET(tty->fdin, &readfs);
-	}
+    if (retval < 0) {
+        perror("select");
+        exit(EXIT_FAILURE);
+    } else {
+        return FD_ISSET(tty->fdin, &readfs);
+    }
 }
 
 static void tty_sgr(tty_t *tty, int code) {
@@ -185,11 +183,11 @@ void tty_printf(tty_t *tty, const char *fmt, ...) {
 }
 
 void tty_putc(tty_t *tty, char c) {
-	fputc(c, tty->fout);
+    (void)fputc(c, tty->fout);
 }
 
 void tty_flush(tty_t *tty) {
-	fflush(tty->fout);
+    (void) fflush(tty->fout); // Cast to void to indicate we're intentionally ignoring the return value
 }
 
 size_t tty_getwidth(tty_t *tty) {
