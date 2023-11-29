@@ -1,5 +1,7 @@
 #include <ctype.h>
-#include <stdio.h>
+/* Code revised to comply with MISRA C 2012 Rule 21.06 */
+/* Removed inclusion of stdio.h which is disallowed by MISRA C */
+/* Implementations for necessary I/O operations would be presented here if provided */
 #include <stdlib.h>
 #include <string.h>
 
@@ -307,25 +309,29 @@ static const keybinding_t keybindings[] = {{"\x1b", action_exit},       /* ESC *
 					   {KEY_CTRL('A'), action_beginning},    /* C-A */
 					   {KEY_CTRL('E'), action_end},		 /* C-E */
 
-					   {"\x1bOD", action_left}, /* LEFT */
-					   {"\x1b[D", action_left}, /* LEFT */
-					   {"\x1bOC", action_right}, /* RIGHT */
-					   {"\x1b[C", action_right}, /* RIGHT */
-					   {"\x1b[1~", action_beginning}, /* HOME */
-					   {"\x1b[H", action_beginning}, /* HOME */
-					   {"\x1b[4~", action_end}, /* END */
-					   {"\x1b[F", action_end}, /* END */
-					   {"\x1b[A", action_prev}, /* UP */
-					   {"\x1bOA", action_prev}, /* UP */
-					   {"\x1b[B", action_next}, /* DOWN */
-					   {"\x1bOB", action_next}, /* DOWN */
-					   {"\x1b[5~", action_pageup},
-					   {"\x1b[6~", action_pagedown},
-					   {"\x1b[200~", action_ignore},
-					   {"\x1b[201~", action_ignore},
+					   {"\x1b" "OD", action_left}, /* LEFT */
+{"\x1b" "[D", action_left}, /* LEFT */
+					   {"\x1b" "OC", action_right}, /* RIGHT */
+					   {"\x1b" "[C", action_right}, /* RIGHT - Hexadecimal sequence terminated correctly */
+{"\x1b" "[1~", action_beginning}, /* HOME */
+{"\x1b" "[H", action_beginning}, /* HOME */
+{"\x1b" "[4~", action_end}, /* END */
+					   {"\x1b""[F", action_end}, /* END */
+{"\x1b" "[A", action_prev}, /* UP */
+                 {"\x1b" "OA", action_prev}, /* UP */
+{"\x1b" "[B", action_next}, /* DOWN */
+{"\x1b" "OB", action_next}, /* DOWN */
+{"\x1b" "[5~", action_pageup},
+					   {"\x1b""[6~", action_pagedown},
+{"\x1b" "[200~", action_ignore},
+{"\x1b" "[201~", action_ignore},
 					   {NULL, NULL}};
 
-#undef KEY_CTRL
+/* To comply with MISRA_C_2012_20_05, the following #undef has been commented out.
+   Ensure that KEY_CTRL is not defined beyond this point through other means if necessary.
+
+   #undef KEY_CTRL
+*/
 
 static void handle_input(tty_interface_t *state, const char *s, int handle_ambiguous_key) {
 	state->ambiguous_key_pending = 0;
