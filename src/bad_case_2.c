@@ -10,8 +10,9 @@ int test1603(int x)
 		break;
 	case 3:	
 		x--;
+		/* fall through */
 	default:
-	    ;
+		break;
 	}
 
 	return x;
