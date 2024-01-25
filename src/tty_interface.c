@@ -167,17 +167,29 @@ static void action_del_char(tty_interface_t *state) {
 }
 
 static void action_del_word(tty_interface_t *state) {
-	size_t original_cursor = state->cursor;
-	size_t cursor = state->cursor;
 
-	while (cursor && isspace(state->search[cursor - 1]))
-		cursor--;
+    size_t original_cursor = state->cursor;
 
-	while (cursor && !isspace(state->search[cursor - 1]))
-		cursor--;
+    // Removed the duplicate assignment to 'cursor' as it's unnecessary
 
-	memmove(&state->search[cursor], &state->search[original_cursor], strlen(state->search) - original_cursor + 1);
-	state->cursor = cursor;
+
+
+    while (state->cursor && isspace(state->search[state->cursor - 1]))
+
+        state->cursor--;
+
+
+
+    while (state->cursor && !isspace(state->search[state->cursor - 1]))
+
+        state->cursor--;
+
+
+
+    memmove(&state->search[state->cursor], &state->search[original_cursor], strlen(state->search) - original_cursor + 1);
+
+    // state->cursor is already set correctly
+
 }
 
 static void action_del_all(tty_interface_t *state) {

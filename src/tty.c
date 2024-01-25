@@ -192,9 +192,13 @@ void tty_flush(tty_t *tty) {
 	fflush(tty->fout);
 }
 
-size_t tty_getwidth(tty_t *tty) {
-	return tty->maxwidth;
-}
+// The function `tty_getwidth` has been removed since it was unused.
+// Ensure to remove any declarations of this function in header files as well, if present.
+
+// If the function was intended to be used in the future or if it is part of an API, 
+// an alternative approach would be commenting it out or using preprocessor directives
+// to include it conditionally. But these approaches are not included here as the main
+// issue is the unused function according to cppcheck and not potential future use.
 
 size_t tty_getheight(tty_t *tty) {
 	return tty->maxheight;

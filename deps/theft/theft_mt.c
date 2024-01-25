@@ -108,7 +108,6 @@ double theft_mt_random_double(struct theft_mt *mt)
 /* generates a random number on [0, 2^64-1]-interval */
 static uint64_t genrand64_int64(struct theft_mt *r)
 {
-    int i;
     uint64_t x;
     static uint64_t mag01[2]={0ULL, MATRIX_A};
 
@@ -119,11 +118,11 @@ static uint64_t genrand64_int64(struct theft_mt *r)
         if (r->mti == NN+1)
             theft_mt_reset(r, 5489ULL);
 
-        for (i=0;i<NN-MM;i++) {
+        for (int i=0; i<NN-MM; i++) { // Notice the placement of 'int i'
             x = (r->mt[i]&UM)|(r->mt[i+1]&LM);
             r->mt[i] = r->mt[i+MM] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
         }
-        for (;i<NN-1;i++) {
+        for (int i=NN-MM; i<NN-1; i++) { // Notice the placement of 'int i'
             x = (r->mt[i]&UM)|(r->mt[i+1]&LM);
             r->mt[i] = r->mt[i+(MM-NN)] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
         }
