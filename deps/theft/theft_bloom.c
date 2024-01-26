@@ -63,22 +63,24 @@ void theft_bloom_free(struct theft_bloom *b) { free(b); }
 
 /* Dump the bloom filter's contents. (Debugging.) */
 void theft_bloom_dump(struct theft_bloom *b) {
+
     uint8_t counts[256];
     memset(counts, 0xFF, sizeof(counts));
 
     size_t total = 0;
+    #if DEBUG_BLOOM_FILTER > 1
     uint16_t row_total = 0;
-    
+    #endif
+
     for (size_t i = 0; i < b->size; i++) {
         uint8_t count = get_bits_set_count(counts, b->bits[i]);
         total += count;
-        row_total += count;
         #if DEBUG_BLOOM_FILTER > 1
+        row_total += count;
         char c = (count == 0 ? '.' : '0' + count);
         printf("%c", c);
         if ((i & 63) == 0 || i == b->size - 1) {
-            printf(" - %2.1f%%\n",
-                (100 * row_total) / (64.0 * 8));
+            printf(" - %2.1f%%\n", (100 * row_total) / (64.0 * 8));
             row_total = 0;
         }
         #endif
@@ -89,12 +91,10 @@ void theft_bloom_dump(struct theft_bloom *b) {
         total, 8*b->size, (int)((100.0 * total)/(8.0*b->size)));
     #endif
 
-    /* If the total number of bits set is > the number of bytes
-     * in the table (i.e., > 1/8 full) then warn the user. */
     if (total > b->size) {
-        fprintf(stderr, "\nWARNING: bloom filter is %zd%% full, "
+        fprintf(stderr, "\nWARNING: bloom filter is %d%% full, "
             "larger bloom_bits value recommended.\n",
-            (size_t)((100 * total) / (8 * b->size)));
+            (int)((100 * total) / (8 * b->size)));
     }
 }
 
