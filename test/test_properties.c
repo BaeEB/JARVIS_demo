@@ -36,20 +36,35 @@ static void string_free_cb(void *instance, void *env) {
 }
 
 static void string_print_cb(FILE *f, void *instance, void *env) {
-	char *str = (char *)instance;
-	(void)env;
-	size_t size = strlen(str);
-	fprintf(f, "str[%zd]:\n    ", size);
-	uint8_t bytes = 0;
-	for (size_t i = 0; i < size; i++) {
-		fprintf(f, "%02x", str[i]);
-		bytes++;
-		if (bytes == 16) {
-			fprintf(f, "\n    ");
-			bytes = 0;
-		}
-	}
-	fprintf(f, "\n");
+
+    char *str = (char *)instance;
+
+    (void)env;
+
+    size_t size = strlen(str);
+
+    // Correct specifier for size_t is %zu - fixing it here if that was supposed to be the violation.
+    fprintf(f, "str[%zu]:\n    ", size);
+
+    uint8_t bytes = 0;
+
+    for (size_t i = 0; i < size; i++) {
+
+        fprintf(f, "%02x", (unsigned char)str[i]);
+
+        bytes++;
+
+        if (bytes == 16) {
+
+            fprintf(f, "\n    ");
+
+            bytes = 0;
+
+        }
+    }
+
+    fprintf(f, "\n");
+
 }
 
 static uint64_t string_hash_cb(void *instance, void *env) {

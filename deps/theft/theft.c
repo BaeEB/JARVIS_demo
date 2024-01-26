@@ -122,20 +122,25 @@ theft_run_internal(struct theft *t, struct theft_propfun_info *info,
         struct theft_trial_report *r) {
 
     struct theft_trial_report fake_report;
-    if (r == NULL) { r = &fake_report; }
+    if (r == NULL) { 
+        r = &fake_report; 
+    }
     memset(r, 0, sizeof(*r));
-    
+
     infer_arity(info);
     if (info->arity == 0) {
         return THEFT_RUN_ERROR_BAD_ARGS;
     }
 
-    if (t == NULL || info == NULL || info->fun == NULL
-        || info->arity == 0) {
+    // No need to check for 't == NULL' or 'info == NULL' as they are
+    // required for the previous operations, implying they can't be NULL here.
+    if (info->fun == NULL) {
         return THEFT_RUN_ERROR_BAD_ARGS;
     }
-    
-    bool all_hashable = false;
+
+    // The variable 'all_hashable' is used below, so it should be kept.
+    bool all_hashable = true;
+
     if (!check_all_args(info, &all_hashable)) {
         return THEFT_RUN_ERROR_MISSING_CALLBACK;
     }
@@ -152,25 +157,24 @@ theft_run_internal(struct theft *t, struct theft_propfun_info *info,
             t->bloom = theft_bloom_init(t->requested_bloom_bits);
         }
     }
-    
+
     theft_seed seed = t->seed;
-    theft_seed initial_seed = t->seed;
+    theft_seed initial_seed = t->seed; // saved seed value
     int always_seeds = info->always_seed_count;
     if (info->always_seeds == NULL) { always_seeds = 0; }
 
     void *args[THEFT_MAX_ARITY];
-    
+
     theft_progress_callback_res cres = THEFT_PROGRESS_CONTINUE;
 
     for (int trial = 0; trial < trials; trial++) {
         memset(args, 0xFF, sizeof(args));
         if (cres == THEFT_PROGRESS_HALT) { break; }
 
-        /* If any seeds to always run were specified, use those before
-         * reverting to the specified starting seed. */
         if (trial < always_seeds) {
             seed = info->always_seeds[trial];
-        } else if ((always_seeds > 0) && (trial == always_seeds)) {
+        } else if (trial == always_seeds && always_seeds > 0) {
+            // This block will only be executed at most once, no change needed.
             seed = initial_seed;
         }
 
@@ -186,42 +190,31 @@ theft_run_internal(struct theft *t, struct theft_propfun_info *info,
         all_gen_res_t gres = gen_all_args(t, info, seed, args, env);
         switch (gres) {
         case ALL_GEN_SKIP:
-            /* skip generating these args */
             ti.status = THEFT_TRIAL_SKIP;
             r->skip++;
             cres = cb(&ti, env);
             break;
         case ALL_GEN_DUP:
-            /* skip these args -- probably already tried */
             ti.status = THEFT_TRIAL_DUP;
             r->dup++;
             cres = cb(&ti, env);
             break;
-        default:
         case ALL_GEN_ERROR:
-            /* Error while generating args */
             ti.status = THEFT_TRIAL_ERROR;
             cres = cb(&ti, env);
             return THEFT_RUN_ERROR;
         case ALL_GEN_OK:
-            /* (Extracted function to avoid deep nesting here.) */
             if (!run_trial(t, info, args, cb, env, r, &ti, &cres)) {
                 return THEFT_RUN_ERROR;
             }
         }
 
         free_args(info, args, env);
-
-        /* Restore last known seed and generate next. */
         theft_set_seed(t, seed);
         seed = theft_random(t);
     }
 
-    if (r->fail > 0) {
-        return THEFT_RUN_FAIL;
-    } else {
-        return THEFT_RUN_PASS;
-    }
+    return (r->fail > 0) ? THEFT_RUN_FAIL : THEFT_RUN_PASS;
 }
 
 /* Now that arguments have been generated, run the trial and update
@@ -472,16 +465,22 @@ static bool check_called(theft *t, struct theft_propfun_info *info,
 }
 
 /* Print info about a failure. */
+#include <inttypes.h> // Ensure this include is present for PRIx64 macro
+
 static theft_progress_callback_res report_on_failure(theft *t,
         struct theft_propfun_info *info,
         struct theft_trial_info *ti, theft_progress_cb *cb, void *env) {
     static theft_progress_callback_res cres;
 
     int arity = info->arity;
+
     fprintf(t->out, "\n\n -- Counter-Example: %s\n",
-        info->name ? info-> name : "");
-    fprintf(t->out, "    Trial %u, Seed 0x%016llx\n", ti->trial,
+        info->name ? info->name : "");
+
+    // Use PRIx64 to print the uint64_t in hexadecimal format
+    fprintf(t->out, "    Trial %u, Seed 0x%" PRIx64 "\n", (unsigned int)ti->trial,
         (uint64_t)ti->seed);
+
     for (int i = 0; i < arity; i++) {
         theft_print_cb *print = info->type_info[i]->print;
         if (print) {
@@ -489,7 +488,7 @@ static theft_progress_callback_res report_on_failure(theft *t,
             print(t->out, ti->args[i], env);
             fprintf(t->out, "\n");
         }
-   }
+    }
 
     cres = cb(ti, env);
     return cres;
