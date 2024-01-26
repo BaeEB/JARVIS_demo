@@ -192,9 +192,12 @@ void tty_flush(tty_t *tty) {
 	fflush(tty->fout);
 }
 
-size_t tty_getwidth(tty_t *tty) {
-	return tty->maxwidth;
-}
+#ifdef EXPORT_UNUSED_FUNCTIONS
+size_t tty_getwidth(tty_t *tty);
+#endif
+
+
+// Removed unused function tty_getwidth
 
 size_t tty_getheight(tty_t *tty) {
 	return tty->maxheight;
