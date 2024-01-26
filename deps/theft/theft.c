@@ -116,112 +116,100 @@ theft_run(struct theft *t, struct theft_cfg *cfg) {
 }
 
 /* Actually run the trials, with all arguments made explicit. */
-static theft_run_res
-theft_run_internal(struct theft *t, struct theft_propfun_info *info,
-        int trials, theft_progress_cb *cb, void *env,
-        struct theft_trial_report *r) {
+static theft_run_res theft_run_internal(struct theft *t, struct theft_propfun_info *info,
+         int trials, theft_progress_cb *cb, void *env,
+         struct theft_trial_report *r) {
+     struct theft_trial_report fake_report;
+     if (r == NULL) { r = &fake_report; }
+     memset(r, 0, sizeof(*r));
+     
+     infer_arity(info);
 
-    struct theft_trial_report fake_report;
-    if (r == NULL) { r = &fake_report; }
-    memset(r, 0, sizeof(*r));
-    
-    infer_arity(info);
-    if (info->arity == 0) {
-        return THEFT_RUN_ERROR_BAD_ARGS;
-    }
+     if (t == NULL || info == NULL || info->fun == NULL) {
+         return THEFT_RUN_ERROR_BAD_ARGS;
+     }
 
-    if (t == NULL || info == NULL || info->fun == NULL
-        || info->arity == 0) {
-        return THEFT_RUN_ERROR_BAD_ARGS;
-    }
-    
-    bool all_hashable = false;
-    if (!check_all_args(info, &all_hashable)) {
-        return THEFT_RUN_ERROR_MISSING_CALLBACK;
-    }
+     if (info->arity == 0) {
+         return THEFT_RUN_ERROR_BAD_ARGS;
+     }
 
-    if (cb == NULL) { cb = default_progress_cb; }
+     bool all_hashable = false;
+     if (!check_all_args(info, &all_hashable)) {
+         return THEFT_RUN_ERROR_MISSING_CALLBACK;
+     }
 
-    /* If all arguments are hashable, then attempt to use
-     * a bloom filter to avoid redundant checking. */
-    if (all_hashable) {
-        if (t->requested_bloom_bits == 0) {
-            t->requested_bloom_bits = theft_bloom_recommendation(trials);
-        }
-        if (t->requested_bloom_bits != THEFT_BLOOM_DISABLE) {
-            t->bloom = theft_bloom_init(t->requested_bloom_bits);
-        }
-    }
-    
-    theft_seed seed = t->seed;
-    theft_seed initial_seed = t->seed;
-    int always_seeds = info->always_seed_count;
-    if (info->always_seeds == NULL) { always_seeds = 0; }
+     if (cb == NULL) { cb = default_progress_cb; }
 
-    void *args[THEFT_MAX_ARITY];
-    
-    theft_progress_callback_res cres = THEFT_PROGRESS_CONTINUE;
+     if (all_hashable) {
+         if (t->requested_bloom_bits == 0) {
+             t->requested_bloom_bits = theft_bloom_recommendation(trials);
+         }
+         if (t->requested_bloom_bits != THEFT_BLOOM_DISABLE) {
+             t->bloom = theft_bloom_init(t->requested_bloom_bits);
+         }
+     }
+     
+     theft_seed seed = t->seed;
+     theft_seed initial_seed = t->seed;  // Although seems unused, it's used after some conditions in the loop.
+     int always_seeds = info->always_seed_count ? info->always_seed_count : 0;
 
-    for (int trial = 0; trial < trials; trial++) {
-        memset(args, 0xFF, sizeof(args));
-        if (cres == THEFT_PROGRESS_HALT) { break; }
+     void *args[THEFT_MAX_ARITY];
+     
+     theft_progress_callback_res cres = THEFT_PROGRESS_CONTINUE;
 
-        /* If any seeds to always run were specified, use those before
-         * reverting to the specified starting seed. */
-        if (trial < always_seeds) {
-            seed = info->always_seeds[trial];
-        } else if ((always_seeds > 0) && (trial == always_seeds)) {
-            seed = initial_seed;
-        }
+     for (int trial = 0; trial < trials; trial++) {
+         memset(args, 0xFF, sizeof(args));
+         if (cres == THEFT_PROGRESS_HALT) { break; }
 
-        struct theft_trial_info ti = {
-            .name = info->name,
-            .trial = trial,
-            .seed = seed,
-            .arity = info->arity,
-            .args = args
-        };
+         if (trial < always_seeds) {
+             seed = info->always_seeds[trial];
+         } else if ((always_seeds > 0) && (trial == always_seeds)) {
+             seed = initial_seed;
+         }
 
-        theft_set_seed(t, seed);
-        all_gen_res_t gres = gen_all_args(t, info, seed, args, env);
-        switch (gres) {
-        case ALL_GEN_SKIP:
-            /* skip generating these args */
-            ti.status = THEFT_TRIAL_SKIP;
-            r->skip++;
-            cres = cb(&ti, env);
-            break;
-        case ALL_GEN_DUP:
-            /* skip these args -- probably already tried */
-            ti.status = THEFT_TRIAL_DUP;
-            r->dup++;
-            cres = cb(&ti, env);
-            break;
-        default:
-        case ALL_GEN_ERROR:
-            /* Error while generating args */
-            ti.status = THEFT_TRIAL_ERROR;
-            cres = cb(&ti, env);
-            return THEFT_RUN_ERROR;
-        case ALL_GEN_OK:
-            /* (Extracted function to avoid deep nesting here.) */
-            if (!run_trial(t, info, args, cb, env, r, &ti, &cres)) {
-                return THEFT_RUN_ERROR;
-            }
-        }
+         struct theft_trial_info ti = {
+             .name = info->name,
+             .trial = trial,
+             .seed = seed,
+             .arity = info->arity,
+             .args = args
+         };
 
-        free_args(info, args, env);
+         theft_set_seed(t, seed);
+         all_gen_res_t gres = gen_all_args(t, info, seed, args, env);
+         switch (gres) {
+         case ALL_GEN_SKIP:
+             ti.status = THEFT_TRIAL_SKIP;
+             r->skip++;
+             cres = cb(&ti, env);
+             break;
+         case ALL_GEN_DUP:
+             ti.status = THEFT_TRIAL_DUP;
+             r->dup++;
+             cres = cb(&ti, env);
+             break;
+         default:
+         case ALL_GEN_ERROR:
+             ti.status = THEFT_TRIAL_ERROR;
+             cres = cb(&ti, env);
+             return THEFT_RUN_ERROR;
+         case ALL_GEN_OK:
+             if (!run_trial(t, info, args, cb, env, r, &ti, &cres)) {
+                 return THEFT_RUN_ERROR;
+             }
+         }
 
-        /* Restore last known seed and generate next. */
-        theft_set_seed(t, seed);
-        seed = theft_random(t);
-    }
+         free_args(info, args, env);
 
-    if (r->fail > 0) {
-        return THEFT_RUN_FAIL;
-    } else {
-        return THEFT_RUN_PASS;
-    }
+         theft_set_seed(t, seed);
+         seed = theft_random(t);
+     }
+
+     if (r->fail > 0) {
+         return THEFT_RUN_FAIL;
+     } else {
+         return THEFT_RUN_PASS;
+     }
 }
 
 /* Now that arguments have been generated, run the trial and update
