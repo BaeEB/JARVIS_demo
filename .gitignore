@@ -1,6 +1,2 @@
-fzy
-fzytest
-*.o
-*.d
-config.h
-test/acceptance/vendor/bundle
+/build/
+/.vscode/

@@ -1,59 +1,99 @@
-VERSION=1.0
+.SUFFIXES:
+MAKEFLAGS+=-r
 
-CPPFLAGS=-DVERSION=\"${VERSION}\" -D_GNU_SOURCE
-CFLAGS+=-MD -Wall -Wextra -g -std=c99 -O3 -pedantic -Ideps -Werror=vla
-PREFIX?=/usr/local
-MANDIR?=$(PREFIX)/share/man
-BINDIR?=$(PREFIX)/bin
-DEBUGGER?=
+config=debug
+defines=standard
+cxxstd=c++11
+# set cxxstd=any to disable use of -std=...
 
-INSTALL=install
-INSTALL_PROGRAM=$(INSTALL)
-INSTALL_DATA=${INSTALL} -m 644
+BUILD=build/make-$(firstword $(CXX))-$(config)-$(defines)-$(cxxstd)
 
-LIBS=-lpthread
-OBJECTS=src/fzy.o src/match.o src/tty.o src/choices.o src/options.o src/tty_interface.o
-THEFTDEPS = deps/theft/theft.o deps/theft/theft_bloom.o deps/theft/theft_mt.o deps/theft/theft_hash.o
-TESTOBJECTS=test/fzytest.c test/test_properties.c test/test_choices.c test/test_match.c src/match.o src/choices.o src/options.o $(THEFTDEPS)
+SOURCES=src/pugixml.cpp $(filter-out tests/fuzz_%,$(wildcard tests/*.cpp))
+EXECUTABLE=$(BUILD)/test
 
-all: fzy
+VERSION=$(shell sed -n 's/.*version \(.*\).*/\1/p' src/pugiconfig.hpp)
+RELEASE=$(filter-out scripts/archive.py docs/%.adoc,$(shell git ls-files docs scripts src CMakeLists.txt LICENSE.md readme.txt))
 
-test/fzytest: $(TESTOBJECTS)
-	$(CC) $(CFLAGS) $(CCFLAGS) -Isrc -o $@ $(TESTOBJECTS) $(LIBS)
+CXXFLAGS=-g -Wall -Wextra -Werror -pedantic -Wundef -Wshadow -Wcast-align -Wcast-qual -Wold-style-cast -Wdouble-promotion
+LDFLAGS=
 
-acceptance: fzy
-	cd test/acceptance && bundle --quiet && bundle exec ruby acceptance_test.rb
+ifeq ($(config),release)
+	CXXFLAGS+=-O3 -DNDEBUG
+endif
 
-test: check
-check: test/fzytest
-	$(DEBUGGER) ./test/fzytest
+ifeq ($(config),coverage)
+	CXXFLAGS+=-coverage
+	LDFLAGS+=-coverage
+endif
 
-fzy: $(OBJECTS)
-	$(CC) $(CFLAGS) $(CCFLAGS) -o $@ $(OBJECTS) $(LIBS)
+ifeq ($(config),sanitize)
+	CXXFLAGS+=-fsanitize=address,undefined -fno-sanitize-recover=all
+	LDFLAGS+=-fsanitize=address,undefined
+endif
 
-%.o: %.c config.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+ifeq ($(config),analyze)
+	CXXFLAGS+=--analyze
+endif
 
-config.h: src/config.def.h
-	cp src/config.def.h config.h
+ifneq ($(defines),standard)
+	COMMA=,
+	CXXFLAGS+=-D $(subst $(COMMA), -D ,$(defines))
+endif
 
-install: fzy
-	mkdir -p $(DESTDIR)$(BINDIR)
-	cp fzy $(DESTDIR)$(BINDIR)/
-	chmod 755 ${DESTDIR}${BINDIR}/fzy
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp fzy.1 $(DESTDIR)$(MANDIR)/man1/
-	chmod 644 ${DESTDIR}${MANDIR}/man1/fzy.1
+ifneq ($(findstring PUGIXML_NO_EXCEPTIONS,$(defines)),)
+	CXXFLAGS+=-fno-exceptions
+endif
 
-fmt:
-	clang-format -i src/*.c src/*.h
+ifneq ($(cxxstd),any)
+	CXXFLAGS+=-std=$(cxxstd)
+endif
+
+OBJECTS=$(SOURCES:%=$(BUILD)/%.o)
+
+all: $(EXECUTABLE)
+
+ifeq ($(config),coverage)
+test: $(EXECUTABLE)
+	-@find $(BUILD) -name '*.gcda' -exec rm {} +
+	./$(EXECUTABLE)
+	@gcov -b -o $(BUILD)/src/ pugixml.cpp.gcda | sed -e '/./{H;$!d;}' -e 'x;/pugixml.cpp/!d;'
+	@find . -name '*.gcov' -and -not -name 'pugixml.cpp.gcov' -exec rm {} +
+	@sed -i -e "s/#####\(.*\)\(\/\/ unreachable.*\)/    1\1\2/" pugixml.cpp.gcov
+else
+test: $(EXECUTABLE)
+	./$(EXECUTABLE)
+endif
+
+fuzz_%: $(BUILD)/fuzz_%
+	@mkdir -p build/$@
+	$< build/$@ tests/data_fuzz_$* -max_len=1024 -dict=tests/fuzz_$*.dict -fork=16
 
 clean:
-	rm -f fzy test/fzytest src/*.o src/*.d deps/*/*.o
+	rm -rf $(BUILD)
 
-veryclean: clean
-	rm -f config.h
+release: build/pugixml-$(VERSION).tar.gz build/pugixml-$(VERSION).zip
 
-.PHONY: test check all clean veryclean install fmt acceptance
+docs: docs/quickstart.html docs/manual.html
+
+build/pugixml-%: .FORCE | $(RELEASE)
+	@mkdir -p $(BUILD)
+	TIMESTAMP=`git show v$(VERSION) -s --format=%ct` && python3 scripts/archive.py $@ pugixml-$(VERSION) $$TIMESTAMP $|
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+
+$(BUILD)/fuzz_%: tests/fuzz_%.cpp src/pugixml.cpp
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -fsanitize=address,fuzzer $^ -o $@
+
+$(BUILD)/%.o: %
+	@mkdir -p $(dir $@)
+	$(CXX) $< $(CXXFLAGS) -c -MMD -MP -o $@
 
 -include $(OBJECTS:.o=.d)
+
+.SECONDEXPANSION:
+docs/%.html: docs/%.adoc $$(shell sed -n 's/include\:\:\(.*\)\[.*/docs\/\1/p' docs/%.adoc)
+	asciidoctor -b html5 -a version=$(VERSION) $< -o $@
+
+.PHONY: all test clean release .FORCE

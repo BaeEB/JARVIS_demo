@@ -1,117 +1,72 @@
-![fzy](http://i.hawth.ca/u/fzy-github.svg)
+pugixml [![Actions Status](https://github.com/zeux/pugixml/workflows/build/badge.svg)](https://github.com/zeux/pugixml/actions) [![Build status](https://ci.appveyor.com/api/projects/status/9hdks1doqvq8pwe7/branch/master?svg=true)](https://ci.appveyor.com/project/zeux/pugixml) [![codecov.io](https://codecov.io/github/zeux/pugixml/coverage.svg?branch=master)](https://codecov.io/github/zeux/pugixml?branch=master) ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+=======
 
-**fzy** is a fast, simple fuzzy text selector for the terminal with an advanced scoring algorithm.
+pugixml is a C++ XML processing library, which consists of a DOM-like interface with rich traversal/modification
+capabilities, an extremely fast XML parser which constructs the DOM tree from an XML file/buffer, and an XPath 1.0
+implementation for complex data-driven tree queries. Full Unicode support is also available, with Unicode interface
+variants and conversions between different Unicode encodings (which happen automatically during parsing/saving).
 
-[Try it out online!](http://jhawthorn.github.io/fzy-demo)
+pugixml is used by a lot of projects, both open-source and proprietary, for performance and easy-to-use interface.
 
-![](http://i.hawth.ca/u/fzy_animated_demo.svg)
+## Documentation
 
-<blockquote>
-It's been kind of life-changing.
--<a href="https://github.com/graygilmore/">@graygilmore</a>
-</blockquote>
+Documentation for the current release of pugixml is available on-line as two separate documents:
 
-<blockquote>
-fzy works great btw
--<a href="https://twitter.com/alexblackie/status/719297828892188672">@alexblackie</a>
-</blockquote>
+* [Quick-start guide](https://pugixml.org/docs/quickstart.html), that aims to provide enough information to start using the library;
+* [Complete reference manual](https://pugixml.org/docs/manual.html), that describes all features of the library in detail.
 
- [![Build Status](https://github.com/jhawthorn/fzy/workflows/CI/badge.svg)](https://github.com/jhawthorn/fzy/actions)
+You’re advised to start with the quick-start guide; however, many important library features are either not described in it at all or only mentioned briefly; if you require more information you should read the complete manual.
 
-## Why use this over fzf, pick, selecta, ctrlp, ...?
+## Example
 
-fzy is faster and shows better results than other fuzzy finders.
+Here's an example of how code using pugixml looks; it opens an XML file, goes over all Tool nodes and prints tools that have a Timeout attribute greater than 0:
 
-Most other fuzzy matchers sort based on the length of a match. fzy tries to
-find the result the user intended. It does this by favouring matches on
-consecutive letters and starts of words. This allows matching using acronyms or
-different parts of the path.
+```c++
+#include "pugixml.hpp"
+#include <iostream>
 
-A gory comparison of the sorting used by fuzzy finders can be found in [ALGORITHM.md](ALGORITHM.md)
-
-fzy is designed to be used both as an editor plugin and on the command line.
-Rather than clearing the screen, fzy displays its interface directly below the current cursor position, scrolling the screen if necessary.
-
-## Installation
-
-**macOS**
-
-Using Homebrew
-
-    brew install fzy
-
-Using MacPorts
-
-    sudo port install fzy
-
-**[Arch Linux](https://www.archlinux.org/packages/?sort=&q=fzy&maintainer=&flagged=)/MSYS2**: `pacman -S fzy`
-
-**[FreeBSD](https://www.freebsd.org/cgi/ports.cgi?query=fzy&stype=all)**: `pkg install fzy`
-
-**[Gentoo Linux](https://packages.gentoo.org/packages/app-shells/fzy)**: `emerge -av app-shells/fzy`
-
-**[Ubuntu](https://packages.ubuntu.com/search?keywords=fzy&searchon=names&suite=bionic&section=all)/[Debian](https://packages.debian.org/search?keywords=fzy&searchon=names&suite=all&section=all)**: `apt-get install fzy`
-
-**[pkgsrc](http://pkgsrc.se/misc/fzy) (NetBSD and others)**: `pkgin install fzy`
-
-**[openSUSE](https://software.opensuse.org/package/fzy)**: `zypper in fzy`
-
-### From source
-
-    make
-    sudo make install
-
-The `PREFIX` environment variable can be used to specify the install location,
-the default is `/usr/local`.
-
-## Usage
-
-fzy is a drop in replacement for [selecta](https://github.com/garybernhardt/selecta), and can be used with its [usage examples](https://github.com/garybernhardt/selecta#usage-examples).
-
-### Use with Vim
-
-fzy can be easily integrated with vim.
-
-``` vim
-function! FzyCommand(choice_command, vim_command)
-  try
-    let output = system(a:choice_command . " | fzy ")
-  catch /Vim:Interrupt/
-    " Swallow errors from ^C, allow redraw! below
-  endtry
-  redraw!
-  if v:shell_error == 0 && !empty(output)
-    exec a:vim_command . ' ' . output
-  endif
-endfunction
-
-nnoremap <leader>e :call FzyCommand("find . -type f", ":e")<cr>
-nnoremap <leader>v :call FzyCommand("find . -type f", ":vs")<cr>
-nnoremap <leader>s :call FzyCommand("find . -type f", ":sp")<cr>
+int main()
+{
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file("xgconsole.xml");
+    if (!result)
+        return -1;
+        
+    for (pugi::xml_node tool: doc.child("Profile").child("Tools").children("Tool"))
+    {
+        int timeout = tool.attribute("Timeout").as_int();
+        
+        if (timeout > 0)
+            std::cout << "Tool " << tool.attribute("Filename").value() << " has timeout " << timeout << "\n";
+    }
+}
 ```
 
-Any program can be used to filter files presented through fzy. [ag (the silver searcher)](https://github.com/ggreer/the_silver_searcher) can be used to ignore files specified by `.gitignore`.
+And the same example using XPath:
 
-``` vim
-nnoremap <leader>e :call FzyCommand("ag . --silent -l -g ''", ":e")<cr>
-nnoremap <leader>v :call FzyCommand("ag . --silent -l -g ''", ":vs")<cr>
-nnoremap <leader>s :call FzyCommand("ag . --silent -l -g ''", ":sp")<cr>
+```c++
+#include "pugixml.hpp"
+#include <iostream>
+
+int main()
+{
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file("xgconsole.xml");
+    if (!result)
+        return -1;
+        
+    pugi::xpath_node_set tools_with_timeout = doc.select_nodes("/Profile/Tools/Tool[@Timeout > 0]");
+    
+    for (pugi::xpath_node node: tools_with_timeout)
+    {
+        pugi::xml_node tool = node.node();
+        std::cout << "Tool " << tool.attribute("Filename").value() <<
+            " has timeout " << tool.attribute("Timeout").as_int() << "\n";
+    }
+}
 ```
 
-## Sorting
 
-fzy attempts to present the best matches first. The following considerations are weighted when sorting:
+## License
 
-It prefers consecutive characters: `file` will match <tt><b>file</b></tt> over <tt><b>fil</b>t<b>e</b>r</tt>.
-
-It prefers matching the beginning of words: `amp` is likely to match <tt><b>a</b>pp/<b>m</b>odels/<b>p</b>osts.rb</tt>.
-
-It prefers shorter matches: `abce` matches <tt><b>abc</b>d<b>e</b>f</tt> over <tt><b>abc</b> d<b>e</b></tt>.
-
-It prefers shorter candidates: `test` matches <tt><b>test</b>s</tt> over <tt><b>test</b>ing</b></tt>.
-
-## See Also
-
-* [fzy.js](https://github.com/jhawthorn/fzy.js) Javascript port
-
-
+This library is available to anybody free of charge, under the terms of MIT License (see LICENSE.md).
