@@ -1,0 +1,38 @@
+deps/theft/theft.c:483:5: warning: %llx in format string (no. 2) requires 'unsigned long long' but the argument type is 'unsigned long'. [invalidPrintfArgType_uint]
+    fprintf(t->out, "    Trial %u, Seed 0x%016llx\n", (unsigned int)ti->trial,
+    ^
+deps/theft/theft.c:129:9: warning: Either the condition 'info==NULL' is redundant or there is possible null pointer dereference: info. [nullPointerRedundantCheck]
+    if (info->arity == 0) {
+        ^
+deps/theft/theft.c:133:27: note: Assuming that condition 'info==NULL' is not redundant
+    if (t == NULL || info == NULL || info->fun == NULL) {
+                          ^
+deps/theft/theft.c:129:9: note: Null pointer dereference
+    if (info->arity == 0) {
+        ^
+deps/theft/theft.c:203:18: style: Variable 'cres' is assigned a value that is never used. [unreadVariable]
+            cres = cb(&ti, env);
+                 ^
+deps/theft/theft_bloom.c:101:9: portability: %zd in format string (no. 1) requires 'ssize_t' but the argument type is 'size_t {aka unsigned long}'. [invalidPrintfArgType_sint]
+        fprintf(stderr, "\nWARNING: bloom filter is %zd%% full, larger bloom_bits value recommended.\n", (size_t)((100 * total) / (8 * b->size)));
+        ^
+deps/theft/theft_mt.c:112:21: style: The scope of the variable 'mag01' can be reduced. [variableScope]
+    static uint64_t mag01[2]={0ULL, MATRIX_A};
+                    ^
+src/match.c:158:22: style: Local variable 'match' shadows outer function [shadowFunction]
+ struct match_struct match;
+                     ^
+src/match.h:14:9: note: Shadowed declaration
+score_t match(const char *needle, const char *haystack);
+        ^
+src/match.c:158:22: note: Shadow variable
+ struct match_struct match;
+                     ^
+deps/theft/theft.c:52:0: style: The function 'theft_random_double' is never used. [unusedFunction]
+
+^
+deps/theft/theft.c:57:0: style: The function 'theft_set_output_stream' is never used. [unusedFunction]
+
+^
+nofile:0:0: information: Cppcheck cannot find all the include files (use --check-config for details) [missingInclude]
+

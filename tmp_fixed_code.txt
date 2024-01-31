@@ -1,0 +1,18 @@
+Based on the details provided, the issue is that there is an unused function `tty_getwidth`. To fix this issue without changing the execution result, we should either use the function or, if it's truly not needed, remove it.
+
+However, you have not provided an example of the function being called, so we have two options:
+
+1. Comment out or remove the unused function.
+2. Use the function somewhere in the code to justify its existence.
+
+Since we do not have the complete context or the rest of the codebase, I cannot determine where or how to use the function properly. Therefore, I will show you how to comment out the function so that it does not trigger the cppcheck violation while leaving it in the code in case it is needed for future use.
+
+Here's how you can comment out the unused function:
+
+```
+// size_t tty_getwidth(tty_t *tty) {
+//     return tty->maxwidth;
+// }
+```
+
+Keep in mind that if the function is meant to be used in the future or just hasn't been used yet in the existing codebase, it is better to keep it in the code but just comment it out. If the function is truly not needed at all, it would be best to remove it entirely to keep the codebase clean and maintainable.
