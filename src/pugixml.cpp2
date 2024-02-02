@@ -2008,35 +2008,28 @@ PUGI_IMPL_NS_BEGIN
 	#undef PUGI_IMPL_SCANCHARTYPE
 	}
 
-PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size)
-{
-    // Ensure data is not NULL
-    if (data == NULL) return encoding_utf8;
-
-    // skip encoding autodetection if input buffer is too small
-    if (size < 4) return encoding_utf8;
-
-    uint8_t d0 = data[0], d1 = data[1], d2 = data[2], d3 = data[3];
-
-    // look for BOM in first few bytes
-    // ... (Rest of the BOM checks go here, unchanged) ...
-
-    // look for utf16 < followed by node name
-    // ... (Rest of the encoding checks go here, unchanged) ...
+PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size) {
+    // ... existing code ...
 
     // no known BOM detected; parse declaration
     const uint8_t* enc = NULL;
     size_t enc_length = 0;
 
-    if (d0 == 0x3c && d1 == 0x3f && d2 == 0x78 && d3 == 0x6d && parse_declaration_encoding(data, size, enc, enc_length))
-    {
-        // Ensure enc is not NULL after the call
-        if (enc == NULL) return encoding_utf8; // Or handle error as appropriate
+    if (d0 == 0x3c && d1 == 0x3f && d2 == 0x78 && d3 == 0x6d && parse_declaration_encoding(data, size, enc, enc_length)) {
+        if (enc != NULL) { // Added check for enc not being NULL after parsing
+            // iso-8859-1 (case-insensitive)
+            if (enc_length == 10
+                // ... existing code ...
+                return encoding_latin1;
 
-        // Encoding checks
-        // ... (Rest of the encoding checks go here, unchanged) ...
+            // latin1 (case-insensitive)
+            if (enc_length == 6
+                // ... existing code ...
+                return encoding_latin1;
+        }
     }
 
+    // ... existing code ...
     return encoding_utf8;
 }
 
