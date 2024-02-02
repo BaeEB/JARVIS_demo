@@ -199,6 +199,7 @@ namespace pugi
 #	include <stdint.h>
 #endif
 
+
 // Memory allocation
 PUGI_IMPL_NS_BEGIN
 	PUGI_IMPL_FN void* default_allocate(size_t size)
@@ -210,6 +211,7 @@ PUGI_IMPL_NS_BEGIN
 	{
 		free(ptr);
 	}
+
 
 	template <typename T>
 	struct xml_memory_management_function_storage
@@ -572,6 +574,8 @@ PUGI_IMPL_NS_BEGIN
 
 			return buf;
 		}
+
+		
 
 	#ifdef PUGIXML_COMPACT
 		void* allocate_object(size_t size, xml_memory_page*& out_page)
@@ -13235,3 +13239,5 @@ namespace pugi
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
+
