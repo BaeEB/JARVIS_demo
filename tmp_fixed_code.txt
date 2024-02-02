@@ -1,0 +1,43 @@
+It seems the code you've provided isn't violating the rule mentioned (CastIntegerToAddressAtReturn), as both `wcschr` and `strchr` functions return pointers (to `wchar_t` and `char` types respectively). If you've received a cppcheck warning for such code, it's possible there's a misunderstanding since the functions involved are indeed returning pointers.
+
+However, if a different piece of code was returning an integer cast to a pointer, the violation fix would involve changing the return type to appropriately match a pointer type instead of an integer.
+
+Given the information, the current code:
+
+```cpp
+08171 : 	PUGI_IMPL_FN const char_t* find_char(const char_t* s, char_t c)
+
+08172 : 	{
+
+08173 : 	#ifdef PUGIXML_WCHAR_MODE
+
+08174 : 		return wcschr(s, c);
+
+08175 : 	#else
+
+08176 : 		return strchr(s, c);
+
+08177 : 	#endif
+```
+
+appears correctly implemented assuming `char_t` is appropriately defined as `char` or `wchar_t` based on `PUGIXML_WCHAR_MODE`. If cppcheck is triggered, it might be a false positive, or there could be additional context needed to understand the issue.
+
+Just for the sake of demonstration, if the wrong code was:
+
+```cpp
+void* functionReturningPointer() {
+    return (void*)100; // Incorrect: returning an integer casted to a pointer
+}
+```
+
+The correct code could be:
+
+```cpp
+void* functionReturningPointer() {
+    static int value = 100; // Allocate an integer
+    void* pointer = &value; // Take the address to return a pointer
+    return pointer;         // Correct: returning a pointer to an integer
+}
+```
+
+But again, based on the information you provided, there does not seem to be a need to change the `find_char` function.
