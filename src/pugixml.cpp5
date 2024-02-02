@@ -1954,65 +1954,59 @@ PUGI_IMPL_NS_BEGIN
 			return is_little_endian() ? encoding_utf32_le : encoding_utf32_be;
 	}
 
-PUGI_IMPL_FN bool parse_declaration_encoding(const uint8_t* data, size_t size, const uint8_t*& out_encoding, size_t& out_length)
-{
-    // check if we have a non-empty XML declaration
-    if (size < 6 || !((data[0] == '<') & (data[1] == '?') & (data[2] == 'x') & (data[3] == 'm') & (data[4] == 'l') && PUGI_IMPL_IS_CHARTYPE(data[5], ct_space)))
-        return false;
+	PUGI_IMPL_FN bool parse_declaration_encoding(const uint8_t* data, size_t size, const uint8_t*& out_encoding, size_t& out_length)
+	{
+	#define PUGI_IMPL_SCANCHAR(ch) { if (offset >= size || data[offset] != ch) return false; offset++; }
+	#define PUGI_IMPL_SCANCHARTYPE(ct) { while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct)) offset++; }
 
-    // scan XML declaration until the encoding field
-    for (size_t i = 6; i + 1 < size; ++i)
-    {
-        // declaration cannot contain ? in quoted values
-        if (data[i] == '?')
-            return false;
+		// check if we have a non-empty XML declaration
+		if (size < 6 || !((data[0] == '<') & (data[1] == '?') & (data[2] == 'x') & (data[3] == 'm') & (data[4] == 'l') && PUGI_IMPL_IS_CHARTYPE(data[5], ct_space)))
+			return false;
 
-        if (data[i] == 'e' && data[i + 1] == 'n')
-        {
-            size_t offset = i;
+		// scan XML declaration until the encoding field
+		for (size_t i = 6; i + 1 < size; ++i)
+		{
+			// declaration can not contain ? in quoted values
+			if (data[i] == '?')
+				return false;
 
-            // Parse the string "encoding" literally
-            const char* encodingStr = "encoding";
-            for (size_t j = 0; encodingStr[j] != '\0'; ++j) {
-                if (offset >= size || data[offset] != encodingStr[j]) 
-                    return false;
-                offset++;
-            }
+			if (data[i] == 'e' && data[i + 1] == 'n')
+			{
+				size_t offset = i;
 
-            // Skip spaces, expect '=', more spaces, and then delimiter
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
+				// encoding follows the version field which can't contain 'en' so this has to be the encoding if XML is well formed
+				PUGI_IMPL_SCANCHAR('e'); PUGI_IMPL_SCANCHAR('n'); PUGI_IMPL_SCANCHAR('c'); PUGI_IMPL_SCANCHAR('o');
+				PUGI_IMPL_SCANCHAR('d'); PUGI_IMPL_SCANCHAR('i'); PUGI_IMPL_SCANCHAR('n'); PUGI_IMPL_SCANCHAR('g');
 
-            if (offset >= size || data[offset] != '=') 
-                return false;
-            offset++;
+				// S? = S?
+				PUGI_IMPL_SCANCHARTYPE(ct_space);
+				PUGI_IMPL_SCANCHAR('=');
+				PUGI_IMPL_SCANCHARTYPE(ct_space);
 
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
+				// the only two valid delimiters are ' and "
+				uint8_t delimiter = (offset < size && data[offset] == '"') ? '"' : '\'';
 
-            // the only two valid delimiters are ' and "
-            uint8_t delimiter = (offset < size && data[offset] == '"') ? '"' : '\'';
+				PUGI_IMPL_SCANCHAR(delimiter);
 
-            if (offset >= size || data[offset] != delimiter)
-                return false;
-            offset++;
+				size_t start = offset;
 
-            size_t start = offset;
+				out_encoding = data + offset;
 
-            out_encoding = data + offset;
+				PUGI_IMPL_SCANCHARTYPE(ct_symbol);
 
-            // Parse delimited encoding value
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_symbol)) offset++;
+				out_length = offset - start;
 
-            out_length = offset - start;
+				PUGI_IMPL_SCANCHAR(delimiter);
 
-            if (offset >= size || data[offset] != delimiter)
-                return false;
+				return true;
+			}
+		}
 
-            return true;
-        }
-    }
+		return false;
 
-    return false;
-}
+	#undef PUGI_IMPL_SCANCHAR
+	#undef PUGI_IMPL_SCANCHARTYPE
+	}
 
 	PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size)
 	{
@@ -8412,20 +8406,26 @@ PUGI_IMPL_NS_BEGIN
 		}
 	};
 
-	PUGI_IMPL_FN double gen_nan()
-	{
-	#if defined(__STDC_IEC_559__) || ((FLT_RADIX - 0 == 2) && (FLT_MAX_EXP - 0 == 128) && (FLT_MANT_DIG - 0 == 24))
-		PUGI_IMPL_STATIC_ASSERT(sizeof(float) == sizeof(uint32_t));
-		typedef uint32_t UI; // BCC5 workaround
-		union { float f; UI i; } u;
-		u.i = 0x7fc00000;
-		return double(u.f);
-	#else
-		// fallback
-		const volatile double zero = 0.0;
-		return zero / zero;
-	#endif
-	}
+#if defined(__STDC_IEC_559__) || ((FLT_RADIX - 0 == 2) && (FLT_MAX_EXP - 0 == 128) && (FLT_MANT_DIG - 0 == 24))
+    PUGI_IMPL_STATIC_ASSERT(sizeof(float) == sizeof(uint32_t));
+    typedef uint32_t UI; // BCC5 workaround
+    union { float f; UI i; } u;
+    u.i = 0x7fc00000;
+    return double(u.f);
+#else
+    // fallback
+    const volatile double zero = 0.0;
+    return zero / zero;
+#endif
+}
+
+bool isOdd(int num) {
+    return (num % 2 == 1) && (num % 2 == 1); // Duplicate expression
+}
+
+bool isOdd(int num) {
+    return num % 2 == 1;
+}
 
 	PUGI_IMPL_FN bool is_nan(double value)
 	{

@@ -1954,65 +1954,6 @@ PUGI_IMPL_NS_BEGIN
 			return is_little_endian() ? encoding_utf32_le : encoding_utf32_be;
 	}
 
-PUGI_IMPL_FN bool parse_declaration_encoding(const uint8_t* data, size_t size, const uint8_t*& out_encoding, size_t& out_length)
-{
-    // check if we have a non-empty XML declaration
-    if (size < 6 || !((data[0] == '<') & (data[1] == '?') & (data[2] == 'x') & (data[3] == 'm') & (data[4] == 'l') && PUGI_IMPL_IS_CHARTYPE(data[5], ct_space)))
-        return false;
-
-    // scan XML declaration until the encoding field
-    for (size_t i = 6; i + 1 < size; ++i)
-    {
-        // declaration cannot contain ? in quoted values
-        if (data[i] == '?')
-            return false;
-
-        if (data[i] == 'e' && data[i + 1] == 'n')
-        {
-            size_t offset = i;
-
-            // Parse the string "encoding" literally
-            const char* encodingStr = "encoding";
-            for (size_t j = 0; encodingStr[j] != '\0'; ++j) {
-                if (offset >= size || data[offset] != encodingStr[j]) 
-                    return false;
-                offset++;
-            }
-
-            // Skip spaces, expect '=', more spaces, and then delimiter
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
-
-            if (offset >= size || data[offset] != '=') 
-                return false;
-            offset++;
-
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
-
-            // the only two valid delimiters are ' and "
-            uint8_t delimiter = (offset < size && data[offset] == '"') ? '"' : '\'';
-
-            if (offset >= size || data[offset] != delimiter)
-                return false;
-            offset++;
-
-            size_t start = offset;
-
-            out_encoding = data + offset;
-
-            // Parse delimited encoding value
-            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_symbol)) offset++;
-
-            out_length = offset - start;
-
-            if (offset >= size || data[offset] != delimiter)
-                return false;
-
-            return true;
-        }
-    }
-
-    return false;
-}
 
 	PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size)
 	{

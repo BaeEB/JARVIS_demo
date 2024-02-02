@@ -1,0 +1,75 @@
+Based on the information provided on rule violations, the unreadVariable notice from cppcheck would suggest that there is a variable assigned in the code that is not being used. However, from the code snippet provided, it is not immediately evident which variable is being flagged as unread, since all variables appear to be used within the provided function.
+
+In this particular case, cppcheck might incorrectly flag the 'offset' variable if it does not recognize the macro usage. Yet the 'offset' variable is clearly used within the `PUGI_IMPL_SCANCHAR` and `PUGI_IMPL_SCANCHARTYPE` macros.
+
+All the other variables like `out_encoding` and `out_length` are clearly assigned and used to output the results of the parsing operation.
+
+If cppcheck specifically indicated an issue with the 'offset' variable, it might be due to the way the macros are defined and used. One possible way to amend this is to integrate the macro operations into the function body directly, making it clearer for static analysis tools to track variable usage.
+
+Considering the above points, here is the modified code maintaining the original logic and removing the macros:
+
+```cpp
+PUGI_IMPL_FN bool parse_declaration_encoding(const uint8_t* data, size_t size, const uint8_t*& out_encoding, size_t& out_length)
+{
+    // check if we have a non-empty XML declaration
+    if (size < 6 || !((data[0] == '<') & (data[1] == '?') & (data[2] == 'x') & (data[3] == 'm') & (data[4] == 'l') && PUGI_IMPL_IS_CHARTYPE(data[5], ct_space)))
+        return false;
+
+    // scan XML declaration until the encoding field
+    for (size_t i = 6; i + 1 < size; ++i)
+    {
+        // declaration cannot contain ? in quoted values
+        if (data[i] == '?')
+            return false;
+
+        if (data[i] == 'e' && data[i + 1] == 'n')
+        {
+            size_t offset = i;
+
+            // Parse the string "encoding" literally
+            const char* encodingStr = "encoding";
+            for (size_t j = 0; encodingStr[j] != '\0'; ++j) {
+                if (offset >= size || data[offset] != encodingStr[j]) 
+                    return false;
+                offset++;
+            }
+
+            // Skip spaces, expect '=', more spaces, and then delimiter
+            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
+
+            if (offset >= size || data[offset] != '=') 
+                return false;
+            offset++;
+
+            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_space)) offset++;
+
+            // the only two valid delimiters are ' and "
+            uint8_t delimiter = (offset < size && data[offset] == '"') ? '"' : '\'';
+
+            if (offset >= size || data[offset] != delimiter)
+                return false;
+            offset++;
+
+            size_t start = offset;
+
+            out_encoding = data + offset;
+
+            // Parse delimited encoding value
+            while (offset < size && PUGI_IMPL_IS_CHARTYPE(data[offset], ct_symbol)) offset++;
+
+            out_length = offset - start;
+
+            if (offset >= size || data[offset] != delimiter)
+                return false;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+```
+
+With the macros `PUGI_IMPL_SCANCHAR` and `PUGI_IMPL_SCANCHARTYPE` removed and their logic explicitly written into the function, static analysis tools like cppcheck should no longer flag the 'offset' variable as unused. However, it's important to ensure that the logic remains identical to avoid altering the execution behavior of the code.
+
+Without a specific variable being indicated by the violation notice, this is the best modification I can provide based on the information given. If cppcheck generated a specific report indicating the exact variable issue, please provide that error message for more precise guidance.
