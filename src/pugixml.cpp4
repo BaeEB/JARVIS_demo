@@ -10,7 +10,16 @@
  * This work is based on the pugxml parser, which is:
  * Copyright (C) 2003, by Kristen Wegner (kristen@tima.net)
  */
+"). Without specific code examples that are violating the rules mentioned in the cppcheck information, I'm unable to provide corrected code.
 
+Cppcheck is a static analysis tool for C/C++ code that provides feedback about code quality, including potential bugs, performance issues, and stylistic problems. The report you've supplied lists various types of violations, but without corresponding code examples, it's impossible to give a solution.
+
+To correct the code, you would normally identify the specific parts of the code that violate the rules described and apply the changes following the recommendations provided. For example, if you have a rule violation for `uninitMemberVar`, you would initialize all member variables in the constructor's initialization list:
+
+Before:
+
+
+After:
 #ifndef SOURCE_PUGIXML_CPP
 #define SOURCE_PUGIXML_CPP
 
@@ -2008,55 +2017,53 @@ PUGI_IMPL_NS_BEGIN
 	#undef PUGI_IMPL_SCANCHARTYPE
 	}
 
-PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size)
-{
-    assert(data != NULL); // Ensure that the input contract is clear that data should not be NULL.
+	PUGI_IMPL_FN xml_encoding guess_buffer_encoding(const uint8_t* data, size_t size)
+	{
+		// skip encoding autodetection if input buffer is too small
+		if (size < 4) return encoding_utf8;
 
-    // skip encoding autodetection if input buffer is too small
-    if (size < 4) return encoding_utf8;
+		uint8_t d0 = data[0], d1 = data[1], d2 = data[2], d3 = data[3];
 
-    uint8_t d0 = data[0], d1 = data[1], d2 = data[2], d3 = data[3];
+		// look for BOM in first few bytes
+		if (d0 == 0 && d1 == 0 && d2 == 0xfe && d3 == 0xff) return encoding_utf32_be;
+		if (d0 == 0xff && d1 == 0xfe && d2 == 0 && d3 == 0) return encoding_utf32_le;
+		if (d0 == 0xfe && d1 == 0xff) return encoding_utf16_be;
+		if (d0 == 0xff && d1 == 0xfe) return encoding_utf16_le;
+		if (d0 == 0xef && d1 == 0xbb && d2 == 0xbf) return encoding_utf8;
 
-    // look for BOM in first few bytes
-    if (d0 == 0 && d1 == 0 && d2 == 0xfe && d3 == 0xff) return encoding_utf32_be;
-    if (d0 == 0xff && d1 == 0xfe && d2 == 0 && d3 == 0) return encoding_utf32_le;
-    if (d0 == 0xfe && d1 == 0xff) return encoding_utf16_be;
-    if (d0 == 0xff && d1 == 0xfe) return encoding_utf16_le;
-    if (d0 == 0xef && d1 == 0xbb && d2 == 0xbf) return encoding_utf8;
+		// look for <, <? or <?xm in various encodings
+		if (d0 == 0 && d1 == 0 && d2 == 0 && d3 == 0x3c) return encoding_utf32_be;
+		if (d0 == 0x3c && d1 == 0 && d2 == 0 && d3 == 0) return encoding_utf32_le;
+		if (d0 == 0 && d1 == 0x3c && d2 == 0 && d3 == 0x3f) return encoding_utf16_be;
+		if (d0 == 0x3c && d1 == 0 && d2 == 0x3f && d3 == 0) return encoding_utf16_le;
 
-    // look for <, <? or <?xm in various encodings
-    if (d0 == 0 && d1 == 0 && d2 == 0 && d3 == 0x3c) return encoding_utf32_be;
-    if (d0 == 0x3c && d1 == 0 && d2 == 0 && d3 == 0) return encoding_utf32_le;
-    if (d0 == 0 && d1 == 0x3c && d2 == 0 && d3 == 0x3f) return encoding_utf16_be;
-    if (d0 == 0x3c && d1 == 0 && d2 == 0x3f && d3 == 0) return encoding_utf16_le;
+		// look for utf16 < followed by node name (this may fail, but is better than utf8 since it's zero terminated so early)
+		if (d0 == 0 && d1 == 0x3c) return encoding_utf16_be;
+		if (d0 == 0x3c && d1 == 0) return encoding_utf16_le;
 
-    // look for utf16 < followed by node name
-    if (d0 == 0 && d1 == 0x3c) return encoding_utf16_be;
-    if (d0 == 0x3c && d1 == 0) return encoding_utf16_le;
+		// no known BOM detected; parse declaration
+		const uint8_t* enc = NULL;
+		size_t enc_length = 0;
 
-    // no known BOM detected; parse declaration
-    const uint8_t* enc = NULL;
-    size_t enc_length = 0;
+		if (d0 == 0x3c && d1 == 0x3f && d2 == 0x78 && d3 == 0x6d && parse_declaration_encoding(data, size, enc, enc_length))
+		{
+			// iso-8859-1 (case-insensitive)
+			if (enc_length == 10
+				&& (enc[0] | ' ') == 'i' && (enc[1] | ' ') == 's' && (enc[2] | ' ') == 'o'
+				&& enc[3] == '-' && enc[4] == '8' && enc[5] == '8' && enc[6] == '5' && enc[7] == '9'
+				&& enc[8] == '-' && enc[9] == '1')
+				return encoding_latin1;
 
-    if (d0 == 0x3c && d1 == 0x3f && d2 == 0x78 && d3 == 0x6d && parse_declaration_encoding(data, size, enc, enc_length))
-    {
-        // iso-8859-1 (case-insensitive)
-        if (enc_length == 10
-            && (enc[0] | ' ') == 'i' && (enc[1] | ' ') == 's' && (enc[2] | ' ') == 'o'
-            && enc[3] == '-' && enc[4] == '8' && enc[5] == '8' && enc[6] == '5' && enc[7] == '9'
-            && enc[8] == '-' && enc[9] == '1')
-            return encoding_latin1;
+			// latin1 (case-insensitive)
+			if (enc_length == 6
+				&& (enc[0] | ' ') == 'l' && (enc[1] | ' ') == 'a' && (enc[2] | ' ') == 't'
+				&& (enc[3] | ' ') == 'i' && (enc[4] | ' ') == 'n'
+				&& enc[5] == '1')
+				return encoding_latin1;
+		}
 
-        // latin1 (case-insensitive)
-        if (enc_length == 6
-            && (enc[0] | ' ') == 'l' && (enc[1] | ' ') == 'a' && (enc[2] | ' ') == 't'
-            && (enc[3] | ' ') == 'i' && (enc[4] | ' ') == 'n'
-            && enc[5] == '1')
-            return encoding_latin1;
-    }
-
-    return encoding_utf8;
-}
+		return encoding_utf8;
+	}
 
 	PUGI_IMPL_FN xml_encoding get_buffer_encoding(xml_encoding encoding, const void* contents, size_t size)
 	{
