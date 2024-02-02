@@ -8171,14 +8171,12 @@ PUGI_IMPL_NS_BEGIN
 		return *pattern == 0;
 	}
 
-	PUGI_IMPL_FN const char_t* find_char(const char_t* s, char_t c)
-	{
-	#ifdef PUGIXML_WCHAR_MODE
-		return wcschr(s, c);
-	#else
-		return strchr(s, c);
-	#endif
-	}
+#ifdef PUGIXML_WCHAR_MODE
+    return wcschr(s, c);
+#else
+    return strchr(s, c);
+#endif
+}
 
 	PUGI_IMPL_FN const char_t* find_substring(const char_t* s, const char_t* p)
 	{

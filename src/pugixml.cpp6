@@ -8172,13 +8172,28 @@ PUGI_IMPL_NS_BEGIN
 	}
 
 	PUGI_IMPL_FN const char_t* find_char(const char_t* s, char_t c)
+
 	{
+
 	#ifdef PUGIXML_WCHAR_MODE
+
 		return wcschr(s, c);
+
 	#else
+
 		return strchr(s, c);
+
 	#endif
-	}
+
+void* functionReturningPointer() {
+    return (void*)100; // Incorrect: returning an integer casted to a pointer
+}
+
+void* functionReturningPointer() {
+    static int value = 100; // Allocate an integer
+    void* pointer = &value; // Take the address to return a pointer
+    return pointer;         // Correct: returning a pointer to an integer
+}
 
 	PUGI_IMPL_FN const char_t* find_substring(const char_t* s, const char_t* p)
 	{
