@@ -1,99 +1,75 @@
-.SUFFIXES:
-MAKEFLAGS+=-r
+# For GNU conventions and targets see https://www.gnu.org/prep/standards/standards.html
+# Using GNU standards makes it easier for some users to keep doing what they are used to.
 
-config=debug
-defines=standard
-cxxstd=c++11
-# set cxxstd=any to disable use of -std=...
+# 'mkdir -p' is non-portable, but it is widely supported. A portable solution
+# is elusive due to race conditions on testing the directory and creating it.
+# Anemic toolchain users can sidestep the problem using MKDIR="mkdir".
 
-BUILD=build/make-$(firstword $(CXX))-$(config)-$(defines)-$(cxxstd)
+AR = ar
+ARFLAGS = cr
+RM = rm -f
+RANLIB = ranlib
+MKDIR = mkdir -p
+CXXFLAGS = -D_FILE_OFFSET_BITS=64 -fPIC
 
-SOURCES=src/pugixml.cpp $(filter-out tests/fuzz_%,$(wildcard tests/*.cpp))
-EXECUTABLE=$(BUILD)/test
+INSTALL = install
+INSTALL_PROGRAM = $(INSTALL)
+INSTALL_DATA = $(INSTALL) -m 644
 
-VERSION=$(shell sed -n 's/.*version \(.*\).*/\1/p' src/pugiconfig.hpp)
-RELEASE=$(filter-out scripts/archive.py docs/%.adoc,$(shell git ls-files docs scripts src CMakeLists.txt LICENSE.md readme.txt))
+prefix = /usr/local
+bindir = $(prefix)/bin
+libdir = $(prefix)/lib
+includedir = $(prefix)/include
 
-CXXFLAGS=-g -Wall -Wextra -Werror -pedantic -Wundef -Wshadow -Wcast-align -Wcast-qual -Wold-style-cast -Wdouble-promotion
-LDFLAGS=
+all: xmltest staticlib
 
-ifeq ($(config),release)
-	CXXFLAGS+=-O3 -DNDEBUG
-endif
+rebuild: clean all
 
-ifeq ($(config),coverage)
-	CXXFLAGS+=-coverage
-	LDFLAGS+=-coverage
-endif
+xmltest: xmltest.cpp libtinyxml2.a
 
-ifeq ($(config),sanitize)
-	CXXFLAGS+=-fsanitize=address,undefined -fno-sanitize-recover=all
-	LDFLAGS+=-fsanitize=address,undefined
-endif
-
-ifeq ($(config),analyze)
-	CXXFLAGS+=--analyze
-endif
-
-ifneq ($(defines),standard)
-	COMMA=,
-	CXXFLAGS+=-D $(subst $(COMMA), -D ,$(defines))
-endif
-
-ifneq ($(findstring PUGIXML_NO_EXCEPTIONS,$(defines)),)
-	CXXFLAGS+=-fno-exceptions
-endif
-
-ifneq ($(cxxstd),any)
-	CXXFLAGS+=-std=$(cxxstd)
-endif
-
-OBJECTS=$(SOURCES:%=$(BUILD)/%.o)
-
-all: $(EXECUTABLE)
-
-ifeq ($(config),coverage)
-test: $(EXECUTABLE)
-	-@find $(BUILD) -name '*.gcda' -exec rm {} +
-	./$(EXECUTABLE)
-	@gcov -b -o $(BUILD)/src/ pugixml.cpp.gcda | sed -e '/./{H;$!d;}' -e 'x;/pugixml.cpp/!d;'
-	@find . -name '*.gcov' -and -not -name 'pugixml.cpp.gcov' -exec rm {} +
-	@sed -i -e "s/#####\(.*\)\(\/\/ unreachable.*\)/    1\1\2/" pugixml.cpp.gcov
-else
-test: $(EXECUTABLE)
-	./$(EXECUTABLE)
-endif
-
-fuzz_%: $(BUILD)/fuzz_%
-	@mkdir -p build/$@
-	$< build/$@ tests/data_fuzz_$* -max_len=1024 -dict=tests/fuzz_$*.dict -fork=16
+effc:
+	gcc -Werror -Wall -Wextra -Wshadow -Wpedantic -Wformat-nonliteral \
+        -Wformat-security -Wswitch-default -Wuninitialized -Wundef \
+        -Wpointer-arith -Woverloaded-virtual -Wctor-dtor-privacy \
+        -Wnon-virtual-dtor -Woverloaded-virtual -Wsign-promo \
+        -Wno-unused-parameter -Weffc++ xmltest.cpp tinyxml2.cpp -o xmltest
 
 clean:
-	rm -rf $(BUILD)
+	-$(RM) *.o xmltest libtinyxml2.a
 
-release: build/pugixml-$(VERSION).tar.gz build/pugixml-$(VERSION).zip
+# Standard GNU target
+distclean:
+	-$(RM) *.o xmltest libtinyxml2.a
 
-docs: docs/quickstart.html docs/manual.html
+test: xmltest
+	./xmltest
 
-build/pugixml-%: .FORCE | $(RELEASE)
-	@mkdir -p $(BUILD)
-	TIMESTAMP=`git show v$(VERSION) -s --format=%ct` && python3 scripts/archive.py $@ pugixml-$(VERSION) $$TIMESTAMP $|
+# Standard GNU target
+check: xmltest
+	./xmltest
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+staticlib: libtinyxml2.a
 
-$(BUILD)/fuzz_%: tests/fuzz_%.cpp src/pugixml.cpp
-	@mkdir -p $(BUILD)
-	$(CXX) $(CXXFLAGS) -fsanitize=address,fuzzer $^ -o $@
+libtinyxml2.a: tinyxml2.o
+	$(AR) $(ARFLAGS) $@ $^
+	$(RANLIB) $@
 
-$(BUILD)/%.o: %
-	@mkdir -p $(dir $@)
-	$(CXX) $< $(CXXFLAGS) -c -MMD -MP -o $@
+tinyxml2.o: tinyxml2.cpp tinyxml2.h
 
--include $(OBJECTS:.o=.d)
+directories:
+	$(MKDIR) $(DESTDIR)$(prefix)
+	$(MKDIR) $(DESTDIR)$(bindir)
+	$(MKDIR) $(DESTDIR)$(libdir)
+	$(MKDIR) $(DESTDIR)$(includedir)
 
-.SECONDEXPANSION:
-docs/%.html: docs/%.adoc $$(shell sed -n 's/include\:\:\(.*\)\[.*/docs\/\1/p' docs/%.adoc)
-	asciidoctor -b html5 -a version=$(VERSION) $< -o $@
+# Standard GNU target.
+install: xmltest staticlib directories
+	$(INSTALL_PROGRAM) xmltest $(DESTDIR)$(bindir)/xmltest
+	$(INSTALL_DATA) tinyxml2.h $(DESTDIR)$(includedir)/tinyxml2.h
+	$(INSTALL_DATA) libtinyxml2.a $(DESTDIR)$(libdir)/libtinyxml2.a
 
-.PHONY: all test clean release .FORCE
+# Standard GNU target
+uninstall:
+	$(RM) $(DESTDIR)$(bindir)/xmltest
+	$(RM) $(DESTDIR)$(includedir)/tinyxml2.h
+	$(RM) $(DESTDIR)$(libdir)/libtinyxml2.a
