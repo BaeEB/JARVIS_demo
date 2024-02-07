@@ -1,24 +1,44 @@
-# intermediate files
-Win32/
-x64/
-ipch/
-resources/out/
-tinyxml2/tinyxml2-cbp/bin/
-tinyxml2/tinyxml2-cbp/obj/
-tinyxml2/bin/
-tinyxml2/temp/
-.artifacts/
-.projects/
-*.sdf
-*.suo
-*.opensdf
-*.user
-*.depend
-*.layout
-*.o
-*.vc.db
-*.vc.opendb
-libtinyxml2.a
-xmltest
-vs/debug
+*.py[cod]
 
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+__pycache__
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+.pytest_cache/
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Pycharm
+.idea
+
+*.db.yml
+
+.DS_Store
