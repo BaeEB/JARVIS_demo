@@ -24,3 +24,5 @@ csbuild-path: "/home/euibin/tbeg/"
 openai-path: "/home/euibin/openai_key"
 
 checker: "PYLINT"
+
+init_path: "tinydb"
